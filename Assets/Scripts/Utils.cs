@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using PolyNav;
 
 public class Utils : MonoBehaviour
@@ -42,5 +43,9 @@ public class Utils : MonoBehaviour
     public static PolyNav2D NavGrid
     { get { return GameObject.FindWithTag("Nav_Grid").GetComponent<PolyNav2D>(); } }
 
+    public Text ItemValue;
+
     public GameObject Player;
+
+    public List<GameObject> ItemIndicators;
 }

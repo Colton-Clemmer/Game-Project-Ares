@@ -29,6 +29,42 @@ public class Player : MonoBehaviour
 
     private Vector3 mouseDirection
     { get { return (transform.position - Camera.main.ScreenToWorldPoint(Input.mousePosition)).normalized * -1; } }
+
+    private void _updateItemText()
+    {
+        if (ItemUseIndex != -1)
+        {
+            switch (Items[ItemUseIndex])
+            {
+                case Utils.Item.Capture_Ball:
+                    Utils.Util.ItemValue.text = "Capture Ball";
+                    break;
+            }
+        } else 
+        {
+            Utils.Util.ItemValue.text = "None";
+        }
+        var indicators = Utils.Util.ItemIndicators;
+        foreach(var indicator in indicators)
+        {
+            indicator.SetActive(false);
+        }
+        if (ItemUseIndex != -1)
+        {
+            for (var i = 0; i < Items.Count(item => item == Items[ItemUseIndex]);i++)
+            {
+                indicators[i].SetActive(true);
+            }
+        }
+    }
+
+    void Start()
+    {
+        if (Items.Count() > 0)
+        {
+            _updateItemText();
+        }
+    }
  
     void FixedUpdate()
     {
@@ -132,7 +168,23 @@ public class Player : MonoBehaviour
                 ball.GetComponent<Rigidbody2D>().AddForce(mouseDirection * _ballThrowForce);
                 break;
         }
+        var currentType = Items[ItemUseIndex];
         Items.Remove(Items[ItemUseIndex]);
+        var itemFound = false;
+        for (var i = 0; i < Items.Count();i++)
+        {
+            if (Items[i] == currentType)
+            {
+                ItemUseIndex = i;
+                itemFound = true;
+                break;
+            }
+        }
+        if (!itemFound)
+        {
+            ItemUseIndex = -1;
+        }
+        _updateItemText();
     }
 
     private void _getMovement()

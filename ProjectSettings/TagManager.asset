@@ -7,6 +7,7 @@ TagManager:
   - Camera_Container
   - Game_Manager
   - Nav_Grid
+  - Item_Value
   layers:
   - Default
   - TransparentFX
