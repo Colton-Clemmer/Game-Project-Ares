@@ -51,3 +51,7 @@ MonoBehaviour:
   Damage: 50
   Moves: 25
   Accuracy: 100
+  _leapForce_sett: 300
+  _telegraphTime_sett: 100
+  _moveTimeLength_sett: 400
+  _recoverTime_sett: 150

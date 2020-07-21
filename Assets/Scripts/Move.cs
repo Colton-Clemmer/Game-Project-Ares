@@ -14,15 +14,34 @@ public class Move : MonoBehaviour
     public int Moves;
     public int Accuracy;
 
-    public float _leapDistance_sett;
+    public float _leapForce_sett;
     public float _telegraphTime_sett;
     public float _moveTimeLength_sett;
     public float _recoverTime_sett;
 
 
+    private GameObject _parent;
+    private Vector3 _moveDirection;
 
-    public void Execute(Vector3 direction)
+    IEnumerator MoveCoroutine;
+    IEnumerator MoveFn()
     {
-        
+        yield return new WaitForSeconds(_telegraphTime_sett / 1000f);
+        _parent.GetComponent<Animator>().SetTrigger("Stop_Telegraph");
+        var rb = _parent.GetComponent<Rigidbody2D>();
+        rb.AddForce(_moveDirection * _leapForce_sett);
+        yield return new WaitForSeconds(_moveTimeLength_sett / 1000f);
+        rb.velocity = Vector3.zero;
+        yield return new WaitForSeconds(_recoverTime_sett / 1000f);
+        _parent.GetComponent<Monster>().UsingMove = false;
+    }
+
+    public void Execute(Vector3 direction, GameObject parent)
+    {
+        _parent = parent;
+        _moveDirection = direction;
+        parent.GetComponent<Animator>().SetTrigger("Telegraph");
+        MoveCoroutine = MoveFn();
+        StartCoroutine(MoveCoroutine);
     }
 }

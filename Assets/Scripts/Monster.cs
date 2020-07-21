@@ -5,7 +5,6 @@ using UnityEngine;
 
 public class Monster : MonoBehaviour
 {
-    public bool Captured;
     public bool Generated;
     public List<Move> Moves;
     public Utils.Type MainType;
@@ -18,6 +17,9 @@ public class Monster : MonoBehaviour
     public int Defence;
     public int SpAttack;
     public int SpDefence;
+
+    public bool Captured;
+    public bool UsingMove;
 
     private int _maxStartingStat_sett = 5;
     private int _maxMoves_sett = 4;
@@ -39,7 +41,13 @@ public class Monster : MonoBehaviour
     {
         if (Captured)
         {
-            Utils.Util.Player.GetComponent<Player>().UpdateFn();
+            if (!UsingMove)
+            {
+                Utils.Util.Player.GetComponent<Player>().UpdateFn();
+            } else 
+            {
+                Utils.Camera.transform.position = transform.position;
+            }
         }
     }
 
@@ -60,8 +68,9 @@ public class Monster : MonoBehaviour
         Generated = true;
     }
 
-    public void GenerateMove()
+    public void GenerateMove(int attempt = 0)
     {
+        if (attempt > 1000) return;
         // TODO: Ensure that moves cannot be generated for monsters that will make them invalid
         var allMoves = Utils.Util.MoveList.Select(m => m.GetComponent<Move>()).ToList();
         var mainTypeMoves = allMoves.Where(m => m.MainType == MainType || m.SubType == SubType).ToList();
@@ -79,7 +88,12 @@ public class Monster : MonoBehaviour
         }
         if (Moves.Any(m => m.ID == moveIndex) || !moveList.Any())
         {
-            GenerateMove();
+            GenerateMove(attempt + 1);
+            return;
+        }
+        if (Moves.Any(m => moveList[moveIndex].ID == m.ID)) 
+        {
+            GenerateMove(attempt + 1);
             return;
         }
         var newMove = Instantiate(moveList[moveIndex]);
@@ -178,6 +192,9 @@ public class Monster : MonoBehaviour
 
     public void UseMove(int moveIndex, Vector3 direction)
     {
-        Moves[moveIndex].Execute(direction);
+        if (UsingMove) return;
+        if (moveIndex > Moves.Count() - 1) return;
+        UsingMove = true;
+        Moves[moveIndex].Execute(direction, gameObject);
     }
 }
