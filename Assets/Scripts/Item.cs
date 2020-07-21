@@ -44,9 +44,7 @@ public class Item : MonoBehaviour
             {
                 if (MonsterInside != null)
                 {
-                    player.MonstersCaptured.Add(MonsterInside.GetComponent<Monster>());
-                    MonsterInside.transform.SetParent(player.transform);
-                    MonsterInside.transform.localPosition = Vector3.zero;
+                    player.CaptureMonster(MonsterInside);
                 } else 
                 {
                     player.Items.Add(Utils.Item.Capture_Ball);

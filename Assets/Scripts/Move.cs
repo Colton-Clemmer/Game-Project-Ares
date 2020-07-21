@@ -11,7 +11,7 @@ public class Move : MonoBehaviour
     public Utils.Type SubType;
 
     public int Damage;
-    public int Moves;
+    public int Stamina;
     public int Accuracy;
 
     public float _leapForce_sett;

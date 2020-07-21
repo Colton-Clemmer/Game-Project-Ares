@@ -1,4 +1,10 @@
-﻿using System.Collections;
+﻿/*
+Stamina will reduce every time a move is used, it is used up quickly but will regenerate quickly
+Endurance will reduce every time a move is used also, but less so. Endurance does not regenerate and must be restored by other methods,a
+*/
+
+
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System;
@@ -16,7 +22,8 @@ public class Player : MonoBehaviour
     private Rigidbody2D _rb
     { get { return CurrentMonster == null ? GetComponent<Rigidbody2D>() : CurrentMonster.GetComponent<Rigidbody2D>(); } }
 
-    [SerializeField] private float _stopForce_sett = 10;
+    [SerializeField] private float _idleStopForce_sett = 10;
+    [SerializeField] private float _stopForce_sett = 3;
     [SerializeField] private float _moveForce_sett = 5;
     [SerializeField] private float _maxSpeet_sett = 5;
     [SerializeField] private float _ballStartDistance_sett = 2;
@@ -58,15 +65,73 @@ public class Player : MonoBehaviour
         }
     }
 
-    void Start()
+    private void _updateMonsterUi()
     {
-        if (Items.Count() > 0)
+        var indicators = Utils.Util.MonsterIndicators;
+        foreach(var indicator in indicators)
         {
-            _updateItemText();
+            indicator.SetActive(false);
+        }
+        for (var i = 0; i < MonstersCaptured.Count();i++)
+        {
+            indicators[i].SetActive(true);
         }
     }
+
+    private void _updateMonsterInfoUi()
+    {
+        if (CurrentMonster == null) return;
+        var util = Utils.Util;
+        util.LevelValue.text = CurrentMonster.Level.ToString();
+        util.SpeedValue.text = CurrentMonster.Speed.ToString();
+        util.AttackValue.text = CurrentMonster.Attack.ToString();
+        util.DefenceValue.text = CurrentMonster.Defence.ToString();
+        util.SpAttackValue.text = CurrentMonster.SpAttack.ToString();
+        util.SpDefenceValue.text = CurrentMonster.SpDefence.ToString();
+        util.TypeValue.text = Utils.GetStringFromType(CurrentMonster.MainType);
+        util.SubTypeValue.text = Utils.GetStringFromType(CurrentMonster.SubType);
+
+        for(var i = 0; i < CurrentMonster.Moves.Count(); i++)
+        {   
+            var move = CurrentMonster.Moves[i];
+            if (i == 0)
+            {
+                util.Move1Name.text = move.Name;
+                util.Move1Damage.text = move.Damage.ToString();
+                util.Move1Stamina.text = move.Stamina.ToString();
+                util.Move1Accuracy.text = move.Accuracy.ToString();
+            }
+            if (i == 1)
+            {
+                util.Move2Name.text = move.Name;
+                util.Move2Damage.text = move.Damage.ToString();
+                util.Move2Stamina.text = move.Stamina.ToString();
+                util.Move2Accuracy.text = move.Accuracy.ToString();
+            }
+            if (i == 2)
+            {
+                util.Move3Name.text = move.Name;
+                util.Move3Damage.text = move.Damage.ToString();
+                util.Move3Stamina.text = move.Stamina.ToString();
+                util.Move3Accuracy.text = move.Accuracy.ToString();
+            }
+            if (i == 3)
+            {
+                util.Move4Name.text = move.Name;
+                util.Move4Damage.text = move.Damage.ToString();
+                util.Move4Stamina.text = move.Stamina.ToString();
+                util.Move4Accuracy.text = move.Accuracy.ToString();
+            }
+        }
+    }
+
+    void Start()
+    {
+        _updateItemText();        
+        _updateMonsterUi();
+    }
  
-    void FixedUpdate()
+    void Update()
     {
         UpdateFn();
     }
@@ -78,9 +143,34 @@ public class Player : MonoBehaviour
         _selectMonster();
         _selectItem();
         _useMove();
+        _checkForInfo();
         if (Input.GetKeyDown(KeyCode.Mouse0) && MonsterIndex == -1)
         {
             _useItem();
+        }
+    }
+
+    public void CaptureMonster(GameObject monster)
+    {
+        MonstersCaptured.Add(monster.GetComponent<Monster>());
+        monster.transform.SetParent(transform);
+        monster.transform.localPosition = Vector3.zero;
+        _updateMonsterUi();
+    }
+
+    private void _checkForInfo()
+    {
+        if (CurrentMonster == null) return;
+        if (Input.GetKeyDown(KeyCode.Tab))
+        {
+            Utils.Util.StatsBoard.SetActive(true);
+            Utils.Util.MoveBoard.SetActive(true);
+            _updateMonsterInfoUi();
+        }
+        if (Input.GetKeyUp(KeyCode.Tab))
+        {
+            Utils.Util.StatsBoard.SetActive(false);
+            Utils.Util.MoveBoard.SetActive(false);
         }
     }
 
@@ -206,11 +296,21 @@ public class Player : MonoBehaviour
         
         if (moveHorizontal == 0 && Mathf.Abs(rigidBody.velocity.x) > 0)
         {
-            moveHorizontal = _stopForce_sett * (rigidBody.velocity.x > 0 ? -1 : 1);
+            moveHorizontal = _idleStopForce_sett * (rigidBody.velocity.x > 0 ? -1 : 1);
         }
         if (moveVertical == 0 && Mathf.Abs(rigidBody.velocity.y) > 0)
         {
-            moveVertical = _stopForce_sett * (rigidBody.velocity.y > 0 ? -1 : 1);
+            moveVertical = _idleStopForce_sett * (rigidBody.velocity.y > 0 ? -1 : 1);
+        }
+
+        if ((inputHorizontal < 0 && rigidBody.velocity.x > 0) || (inputHorizontal > 0 && rigidBody.velocity.x < 0))
+        {
+            moveHorizontal *= _stopForce_sett;
+        }
+
+        if ((inputVertical < 0 && rigidBody.velocity.y > 0) || (inputVertical > 0 && rigidBody.velocity.y < 0))
+        {
+            moveVertical *= _stopForce_sett;
         }
 
         rigidBody.AddForce(new Vector2(moveHorizontal, moveVertical));
