@@ -89,6 +89,7 @@ public class Utils : MonoBehaviour
 
     public List<GameObject> MonsterIndicators;
 
+    // Stats UI
     public GameObject StatsBoard;
     public GameObject MoveBoard;
     public Text TypeValue;
@@ -99,6 +100,8 @@ public class Utils : MonoBehaviour
     public Text DefenceValue;
     public Text SpAttackValue;
     public Text SpDefenceValue;
+
+    // Moves UI
 
     public Text Move1Name;
     public Text Move1Damage;
@@ -116,4 +119,8 @@ public class Utils : MonoBehaviour
     public Text Move4Damage;
     public Text Move4Stamina;
     public Text Move4Accuracy;
+
+    // Targeting UI
+    public Text TargetLvlValue;
+    public Text TargetTypeValue;
 }

@@ -89,7 +89,7 @@ public class Player : MonoBehaviour
         util.SpAttackValue.text = CurrentMonster.SpAttack.ToString();
         util.SpDefenceValue.text = CurrentMonster.SpDefence.ToString();
         util.TypeValue.text = Utils.GetStringFromType(CurrentMonster.MainType);
-        util.SubTypeValue.text = Utils.GetStringFromType(CurrentMonster.SubType);
+        util.SubTypeValue.text = CurrentMonster.MainType == CurrentMonster.SubType ? "None" : Utils.GetStringFromType(CurrentMonster.SubType);
 
         for(var i = 0; i < CurrentMonster.Moves.Count(); i++)
         {   
