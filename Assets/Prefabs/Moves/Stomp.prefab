@@ -49,9 +49,9 @@ MonoBehaviour:
   MainType: 0
   SubType: 0
   Damage: 65
-  Moves: 20
+  Stamina: 0
   Accuracy: 100
-  _leapForce_sett: 1000
-  _telegraphTime_sett: 300
-  _moveTimeLength_sett: 1000
+  _leapForce_sett: 300
+  _telegraphTime_sett: 400
+  _moveTimeLength_sett: 400
   _recoverTime_sett: 200
