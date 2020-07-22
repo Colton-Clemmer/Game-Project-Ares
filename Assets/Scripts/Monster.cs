@@ -12,6 +12,7 @@ public class Monster : MonoBehaviour
     public Utils.Type SubType;
     public int MaxHealth;
     private int _healthStat;
+    public int CurrentHealth;
     public int Level;
     public int Speed;
     public int Attack;
@@ -20,7 +21,7 @@ public class Monster : MonoBehaviour
     public int SpDefence;
 
     public bool Captured;
-    public bool UsingMove;
+    public int UsingMove = -1;
 
     private int _maxStartingStat_sett = 5;
     private int _maxMoves_sett = 4;
@@ -37,6 +38,7 @@ public class Monster : MonoBehaviour
 
     [SerializeField] private GameObject _moveUseBackGround;
     [SerializeField] private TextMeshPro _useMoveValue;
+    [SerializeField] private GameObject _healthBar;
 
     void Start()
     {
@@ -50,7 +52,7 @@ public class Monster : MonoBehaviour
     {
         if (Captured)
         {
-            if (!UsingMove)
+            if (UsingMove == -1)
             {
                 Utils.Util.Player.GetComponent<Player>().UpdateFn();
             } else 
@@ -118,6 +120,13 @@ public class Monster : MonoBehaviour
         _subTypeValue.text = MainType == SubType ? "" : Utils.GetStringFromType(SubType);
     }
 
+    private void _updateHealthBar()
+    {
+        var healthScale = _healthBar.transform.localScale;
+        healthScale.x = CurrentHealth / MaxHealth;
+        _healthBar.transform.localScale = healthScale;
+    }
+
     private void _increaseStats(int remainingPoints, List<int> statsDone = null)
     {
         if (statsDone == null) statsDone = new List<int>();
@@ -155,6 +164,7 @@ public class Monster : MonoBehaviour
         }
         if (statsDone.Count() == 5) statsDone.RemoveAll(s => true);
         if (remainingPoints > 0) _increaseStats(remainingPoints, statsDone);
+        CurrentHealth = MaxHealth;
     }
 
     private void _pickType()
@@ -208,9 +218,9 @@ public class Monster : MonoBehaviour
 
     public void UseMove(int moveIndex, Vector3 direction)
     {
-        if (UsingMove) return;
+        if (UsingMove >= 0) return;
         if (moveIndex > Moves.Count() - 1) return;
-        UsingMove = true;
+        UsingMove = moveIndex;
         _moveUseBackGround.SetActive(true);
         _useMoveValue.text = "Using " + Moves[moveIndex].Name;
         Moves[moveIndex].Execute(direction, gameObject);
@@ -219,5 +229,15 @@ public class Monster : MonoBehaviour
     public void EndMove()
     {
         _moveUseBackGround.SetActive(false);
+    }
+
+    void OnCollisionEnter2D(Collision2D col)
+    {
+        var monster = col.gameObject.GetComponent<Monster>();
+        if (monster == null || monster.UsingMove == -1) return;
+        var move = monster.Moves[UsingMove];
+        var damage = (float) move.Damage * Utils.GetTypeRelation(move.MainType, MainType);
+        CurrentHealth -= (int) (damage * ((float) monster.Attack / 20f));
+        _updateHealthBar();
     }
 }

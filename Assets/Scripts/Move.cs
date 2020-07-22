@@ -33,7 +33,7 @@ public class Move : MonoBehaviour
         yield return new WaitForSeconds(_moveTimeLength_sett / 1000f);
         rb.velocity = Vector3.zero;
         yield return new WaitForSeconds(_recoverTime_sett / 1000f);
-        _parent.GetComponent<Monster>().UsingMove = false;
+        _parent.GetComponent<Monster>().UsingMove = -1;
         var mon = _parent.GetComponent<Monster>();
         if (mon != null)
         {
