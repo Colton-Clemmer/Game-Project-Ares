@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using TMPro;
 
 public class Monster : MonoBehaviour
 {
@@ -30,11 +31,19 @@ public class Monster : MonoBehaviour
     private float _baseMainTypeMoveChance_sett = .4f;
     private float _baseSubTypeMoveChance_sett = .3f;
 
+    [SerializeField] private TextMeshPro _levelValue;
+    [SerializeField] private TextMeshPro _typeValue;
+    [SerializeField] private TextMeshPro _subTypeValue;
+
+    [SerializeField] private GameObject _moveUseBackGround;
+    [SerializeField] private TextMeshPro _useMoveValue;
+
     void Start()
     {
         // TODO: Add moves as monsters level up
         // Add move level requirements
         Generate(1);
+        _updateText();
     }
 
     void Update()
@@ -100,6 +109,13 @@ public class Monster : MonoBehaviour
         newMove.transform.SetParent(transform);
         newMove.transform.position = Vector3.zero;
         Moves.Add(newMove.GetComponent<Move>());
+    }
+
+    private void _updateText()
+    {
+        _levelValue.text = Level.ToString();
+        _typeValue.text = Utils.GetStringFromType(MainType);
+        _subTypeValue.text = MainType == SubType ? "" : Utils.GetStringFromType(SubType);
     }
 
     private void _increaseStats(int remainingPoints, List<int> statsDone = null)
@@ -195,6 +211,13 @@ public class Monster : MonoBehaviour
         if (UsingMove) return;
         if (moveIndex > Moves.Count() - 1) return;
         UsingMove = true;
+        _moveUseBackGround.SetActive(true);
+        _useMoveValue.text = "Using " + Moves[moveIndex].Name;
         Moves[moveIndex].Execute(direction, gameObject);
+    }
+
+    public void EndMove()
+    {
+        _moveUseBackGround.SetActive(false);
     }
 }

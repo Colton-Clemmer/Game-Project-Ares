@@ -34,6 +34,11 @@ public class Move : MonoBehaviour
         rb.velocity = Vector3.zero;
         yield return new WaitForSeconds(_recoverTime_sett / 1000f);
         _parent.GetComponent<Monster>().UsingMove = false;
+        var mon = _parent.GetComponent<Monster>();
+        if (mon != null)
+        {
+            mon.EndMove();
+        }
     }
 
     public void Execute(Vector3 direction, GameObject parent)

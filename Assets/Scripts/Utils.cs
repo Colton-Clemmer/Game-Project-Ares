@@ -121,6 +121,7 @@ public class Utils : MonoBehaviour
     public Text Move4Accuracy;
 
     // Targeting UI
+    public GameObject TargetContainer;
     public Text TargetLvlValue;
     public Text TargetTypeValue;
 }
