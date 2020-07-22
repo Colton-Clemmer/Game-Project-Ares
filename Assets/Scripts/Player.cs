@@ -144,7 +144,7 @@ public class Player : MonoBehaviour
         _selectItem();
         _useMove();
         _checkForInfo();
-        if (Input.GetKeyDown(KeyCode.Mouse0) && MonsterIndex == -1)
+        if (Input.GetKey(KeyCode.Mouse1) && Input.GetKeyDown(KeyCode.Mouse0) && MonsterIndex == -1)
         {
             _useItem();
         }
@@ -177,12 +177,15 @@ public class Player : MonoBehaviour
     private void _useMove()
     {
         if (!MonstersCaptured.Any() || MonsterIndex == -1) return;
-        if (Input.GetKeyDown(KeyCode.Mouse0))
+        var leftClick = Input.GetKeyDown(KeyCode.Mouse0);
+        var rightClick = Input.GetKeyDown(KeyCode.Mouse1);
+        if (leftClick)
         {
-            MonstersCaptured[MonsterIndex].UseMove(Input.GetKeyDown(KeyCode.R) ? 0 : 2, mouseDirection);
-        } else if (Input.GetKeyDown(KeyCode.Mouse1))
+            MonstersCaptured[MonsterIndex].UseMove(Input.GetKey(KeyCode.R) ? 2 : 0, mouseDirection);
+        }
+        if (rightClick)
         {
-            MonstersCaptured[MonsterIndex].UseMove(Input.GetKeyDown(KeyCode.R) ? 1 : 3, mouseDirection);
+            MonstersCaptured[MonsterIndex].UseMove(Input.GetKey(KeyCode.R) ? 3 : 1, mouseDirection);
         }
     }
 
