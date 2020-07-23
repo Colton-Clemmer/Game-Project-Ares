@@ -127,6 +127,7 @@ public class Player : MonoBehaviour
 
     void Start()
     {
+        _lastMonsterIndex = MonsterIndex;
         _updateItemText();        
         _updateMonsterUi();
     }
@@ -182,24 +183,40 @@ public class Player : MonoBehaviour
         if (leftClick)
         {
             MonstersCaptured[MonsterIndex].UseMove(Input.GetKey(KeyCode.R) ? 2 : 0, mouseDirection);
+            UpdateStaminaUi();
         }
         if (rightClick)
         {
             MonstersCaptured[MonsterIndex].UseMove(Input.GetKey(KeyCode.R) ? 3 : 1, mouseDirection);
+            UpdateStaminaUi();
         }
     }
+
+    public void UpdateStaminaUi()
+    {
+        var staminaScale = Utils.Util.StaminaBar.transform.localScale;
+        staminaScale.x = (float) CurrentMonster.CurrentStamina / (float) CurrentMonster.Stamina;
+        Utils.Util.StaminaBar.transform.localScale = staminaScale;
+        var enduranceScale = Utils.Util.EnduranceBar.transform.localScale;
+        enduranceScale.x = (float) CurrentMonster.CurrentEndurance / (float) CurrentMonster.Stamina;
+        Utils.Util.EnduranceBar.transform.localScale = enduranceScale;
+    }
+
+    private int _lastMonsterIndex;
 
     private void _selectMonster()
     {
         if (_lastMonsterSwitch.AddMilliseconds(_monsterSwitchMillis) > DateTime.Now) return;
         if (Input.GetKeyDown(KeyCode.Q) && MonstersCaptured.Count() > 0)
         {
+            _lastMonsterIndex = MonsterIndex;
             _lastMonsterSwitch = DateTime.Now;
             MonsterIndex--;
             if (MonsterIndex < -1) MonsterIndex = MonstersCaptured.Count() - 1;
         }
         if (Input.GetKeyDown(KeyCode.E) && MonstersCaptured.Count() > 0)
         {
+            _lastMonsterIndex = MonsterIndex;
             _lastMonsterSwitch = DateTime.Now;
             MonsterIndex++;
             if (MonsterIndex > MonstersCaptured.Count() - 1)
@@ -207,24 +224,33 @@ public class Player : MonoBehaviour
                 MonsterIndex = -1;
             }
         }
-        if (MonsterIndex >= 0)
+        if (_lastMonsterIndex != MonsterIndex)
         {
-            gameObject.SetActive(false);
-            MonstersCaptured[MonsterIndex].transform.SetParent(null);
-            transform.SetParent(MonstersCaptured[MonsterIndex].transform);
-            for (var i = 0;i < MonstersCaptured.Count();i++)
+            _lastMonsterIndex = MonsterIndex;
+            if (MonsterIndex >= 0)
             {
-                MonstersCaptured[i].gameObject.SetActive(i == MonsterIndex);
-                if (i != MonsterIndex) MonstersCaptured[i].transform.SetParent(transform);
-            }
-        } else 
-        {
-            gameObject.SetActive(true);
-            transform.SetParent(null);
-            foreach(var monster in MonstersCaptured)
+                Utils.Util.StaminaGauge.SetActive(true);
+                Utils.Util.EnduranceGauge.SetActive(true);
+                gameObject.SetActive(false);
+                MonstersCaptured[MonsterIndex].transform.SetParent(null);
+                transform.SetParent(MonstersCaptured[MonsterIndex].transform);
+                for (var i = 0;i < MonstersCaptured.Count();i++)
+                {
+                    MonstersCaptured[i].gameObject.SetActive(i == MonsterIndex);
+                    if (i != MonsterIndex) MonstersCaptured[i].transform.SetParent(transform);
+                }
+                MonstersCaptured[MonsterIndex].StartStaminaRegen();
+            } else 
             {
-                monster.gameObject.SetActive(false);
-                monster.transform.SetParent(transform);
+                Utils.Util.StaminaGauge.SetActive(false);
+                Utils.Util.EnduranceGauge.SetActive(false);
+                gameObject.SetActive(true);
+                transform.SetParent(null);
+                foreach(var monster in MonstersCaptured)
+                {
+                    monster.gameObject.SetActive(false);
+                    monster.transform.SetParent(transform);
+                }
             }
         }
     }

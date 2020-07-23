@@ -3,3 +3,6 @@ Capture ball should stop after some time if it doesn't hit anything
 Stamina bar
 Endurance bar
 Experiance bar
+Feedback after move does not have enough stamina
+Regen stamina over time
+Feedback for switching monsters too fast

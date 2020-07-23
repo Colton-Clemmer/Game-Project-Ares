@@ -91,6 +91,11 @@ public class Utils : MonoBehaviour
 
     public List<GameObject> MonsterIndicators;
 
+    public GameObject StaminaGauge;
+    public GameObject StaminaBar;
+    public GameObject EnduranceGauge;
+    public GameObject EnduranceBar;
+
     // Stats UI
     public GameObject StatsBoard;
     public GameObject MoveBoard;
@@ -121,11 +126,6 @@ public class Utils : MonoBehaviour
     public Text Move4Damage;
     public Text Move4Stamina;
     public Text Move4Accuracy;
-
-    // Targeting UI
-    public GameObject TargetContainer;
-    public Text TargetLvlValue;
-    public Text TargetTypeValue;
 
     public static float GetTypeRelation(Type attackingType, Type defendingType)
     {

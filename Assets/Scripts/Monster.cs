@@ -12,6 +12,9 @@ public class Monster : MonoBehaviour
     public int MaxHealth;
     private int _healthStat;
     public int CurrentHealth;
+    public int Stamina = 100;
+    public int CurrentStamina = 100;
+    public int CurrentEndurance = 100;
     public int Level;
     public int Speed;
     public int Attack;
@@ -24,8 +27,11 @@ public class Monster : MonoBehaviour
     public bool Stunned;
     public int UsingMove = -1;
 
+    [SerializeField] private float _staminaRegenTime_sett = 200;
+    [SerializeField] private float _staminaRegenDelay_sett = 600;
     [SerializeField] private float _attackWeight_sett = .5f;
     [SerializeField] private float _damageNumberForce_sett = 100;
+    [SerializeField] private float _enduranceDivider_sett = 4;
     private int _maxStartingStat_sett = 5;
     private int _maxMoves_sett = 4;
     private int _minStartHealth_sett = 20;
@@ -228,6 +234,10 @@ public class Monster : MonoBehaviour
     {
         if (UsingMove >= 0) return;
         if (moveIndex > Moves.Count() - 1) return;
+        var move = Moves[moveIndex];
+        if (CurrentStamina < move.Stamina || CurrentEndurance < move.Stamina / _enduranceDivider_sett) return;
+        CurrentStamina -= move.Stamina;
+        CurrentEndurance -= (int) ((float) move.Stamina / (float) _enduranceDivider_sett);
         UsingMove = moveIndex;
         _moveUseBackGround.SetActive(true);
         _useMoveValue.text = "Using " + Moves[moveIndex].Name;
@@ -273,6 +283,33 @@ public class Monster : MonoBehaviour
             _stunCoroutine = _stunFn(move);
             StartCoroutine(_stunCoroutine);
         }
+    }
+
+    public void StartStaminaRegen()
+    {
+        _staminaRegenCoroutine = _staminaRegenFn();
+        StartCoroutine(_staminaRegenCoroutine);
+    }
+
+    IEnumerator _staminaRegenCoroutine;
+    private bool _usedMove;
+
+    IEnumerator _staminaRegenFn()
+    {
+        yield return new WaitForSeconds((_usedMove ? _staminaRegenDelay_sett : _staminaRegenTime_sett) / 1000f);
+        if (UsingMove != -1)
+        {
+            _usedMove = true;
+        }
+        if (CurrentStamina < Stamina && UsingMove == -1)
+        {
+            CurrentStamina++;
+            Utils.Util.Player.GetComponent<Player>().UpdateStaminaUi();
+            _usedMove = false;
+        }
+        _staminaRegenCoroutine = _staminaRegenFn();
+        StartCoroutine(_staminaRegenCoroutine);
+        
     }
 
     void OnCollisionEnter2D(Collision2D col)

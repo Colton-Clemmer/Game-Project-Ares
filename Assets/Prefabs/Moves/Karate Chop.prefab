@@ -49,7 +49,7 @@ MonoBehaviour:
   MainType: 2
   SubType: 2
   Damage: 50
-  Stamina: 0
+  Stamina: 10
   Accuracy: 100
   _leapForce_sett: 200
   _telegraphTime_sett: 100
