@@ -1,8 +1,7 @@
 Add capture time and percentage chance based on health
 Capture ball should stop after some time if it doesn't hit anything
-Stamina bar
-Endurance bar
 Experiance bar
 Feedback after move does not have enough stamina
-Regen stamina over time
 Feedback for switching monsters too fast
+Stamina regen should delay longer after a move
+Make killing enemies that are lower leveled than current monster give less xp

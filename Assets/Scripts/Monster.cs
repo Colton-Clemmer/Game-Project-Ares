@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 using UnityEngine;
 using TMPro;
 
@@ -15,6 +16,7 @@ public class Monster : MonoBehaviour
     public int Stamina = 100;
     public int CurrentStamina = 100;
     public int CurrentEndurance = 100;
+    public int Experience;
     public int Level;
     public int Speed;
     public int Attack;
@@ -32,6 +34,7 @@ public class Monster : MonoBehaviour
     [SerializeField] private float _attackWeight_sett = .5f;
     [SerializeField] private float _damageNumberForce_sett = 100;
     [SerializeField] private float _enduranceDivider_sett = 4;
+    [SerializeField] private float _experienceMultiplier = 1;
     private int _maxStartingStat_sett = 5;
     private int _maxMoves_sett = 4;
     private int _minStartHealth_sett = 20;
@@ -40,6 +43,10 @@ public class Monster : MonoBehaviour
     private float _singleTypeChance_sett = .75f;
     private float _baseMainTypeMoveChance_sett = .4f;
     private float _baseSubTypeMoveChance_sett = .3f;
+    private float _experienceNotificationTime_sett = 1500;
+
+    public bool Dead
+    { get { return CurrentHealth <= 0; } }
 
     [SerializeField] private TextMeshPro _levelValue;
     [SerializeField] private TextMeshPro _typeValue;
@@ -49,6 +56,7 @@ public class Monster : MonoBehaviour
     [SerializeField] private TextMeshPro _useMoveValue;
     [SerializeField] private GameObject _healthBar;
     [SerializeField] private GameObject _damageNumber;
+    [SerializeField] private GameObject _experienceText;
 
     void Start()
     {
@@ -89,6 +97,7 @@ public class Monster : MonoBehaviour
             LevelUp();
         }
         Generated = true;
+        Experience = (int) Mathf.Pow((float) Math.E, (float) Level);
     }
 
     public void GenerateMove(int attempt = 0)
@@ -277,6 +286,11 @@ public class Monster : MonoBehaviour
         Instantiate(_damageNumber);
         _damageNumber.transform.position = transform.position + ((transform.position - attackingMonster.transform.position).normalized * .5f);
         _damageNumber.GetComponent<TextMeshPro>().text = amount.ToString();
+        if (Dead)
+        {
+            _kill(attackingMonster);
+            return;
+        }
         _updateHealthBar();
         if (move._stunTime_sett > 0)
         {
@@ -285,10 +299,41 @@ public class Monster : MonoBehaviour
         }
     }
 
+    private void _kill(Monster attackingMonster)
+    {
+        if (!Dead) return;
+        var experience = Mathf.Pow((float) Math.E, (float) Level) * _experienceMultiplier;
+        attackingMonster.AddExperience((int) experience);
+        Destroy(gameObject);
+    }
+
     public void StartStaminaRegen()
     {
         _staminaRegenCoroutine = _staminaRegenFn();
         StartCoroutine(_staminaRegenCoroutine);
+    }
+
+    public void AddExperience(int amount)
+    {
+        Experience += amount;
+        if (Experience >= Mathf.Pow((float) Math.E, (float) Level + 1f))
+        {
+            LevelUp();
+        }
+        _experienceAddCoroutine = _experienceAddFn(amount);
+        StartCoroutine(_experienceAddCoroutine);
+    }
+
+    IEnumerator _experienceAddCoroutine;
+
+    IEnumerator _experienceAddFn(int amount)
+    {
+        var notification = Utils.Util.ExperienceNotification;
+        notification.gameObject.SetActive(true);
+        notification.text = "Gained " + amount + " experience";
+        yield return new WaitForSeconds(_experienceNotificationTime_sett / 1000f);
+        notification.gameObject.SetActive(false);
+        Utils.Util.Player.GetComponent<Player>().UpdateExperienceUi();
     }
 
     IEnumerator _staminaRegenCoroutine;

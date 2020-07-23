@@ -202,6 +202,14 @@ public class Player : MonoBehaviour
         Utils.Util.EnduranceBar.transform.localScale = enduranceScale;
     }
 
+    public void UpdateExperienceUi()
+    {
+        if (CurrentMonster == null) return;
+        var experienceScale = Utils.Util.ExperienceBar.transform.localScale;
+        experienceScale.x = (CurrentMonster.Experience - Mathf.Pow((float) Math.E, (float) CurrentMonster.Level)) / (Mathf.Pow((float) Math.E, (float) CurrentMonster.Level + 1f) - Mathf.Pow((float) Math.E, (float) CurrentMonster.Level));
+        Utils.Util.ExperienceBar.transform.localScale = experienceScale;
+    }
+
     private int _lastMonsterIndex;
 
     private void _selectMonster()
@@ -231,6 +239,7 @@ public class Player : MonoBehaviour
             {
                 Utils.Util.StaminaGauge.SetActive(true);
                 Utils.Util.EnduranceGauge.SetActive(true);
+                Utils.Util.ExperienceGauge.SetActive(true);
                 gameObject.SetActive(false);
                 MonstersCaptured[MonsterIndex].transform.SetParent(null);
                 transform.SetParent(MonstersCaptured[MonsterIndex].transform);
@@ -240,10 +249,12 @@ public class Player : MonoBehaviour
                     if (i != MonsterIndex) MonstersCaptured[i].transform.SetParent(transform);
                 }
                 MonstersCaptured[MonsterIndex].StartStaminaRegen();
+                UpdateExperienceUi();
             } else 
             {
                 Utils.Util.StaminaGauge.SetActive(false);
                 Utils.Util.EnduranceGauge.SetActive(false);
+                Utils.Util.ExperienceGauge.SetActive(false);
                 gameObject.SetActive(true);
                 transform.SetParent(null);
                 foreach(var monster in MonstersCaptured)

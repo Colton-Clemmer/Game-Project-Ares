@@ -95,6 +95,9 @@ public class Utils : MonoBehaviour
     public GameObject StaminaBar;
     public GameObject EnduranceGauge;
     public GameObject EnduranceBar;
+    public GameObject ExperienceGauge;
+    public GameObject ExperienceBar;
+    public Text ExperienceNotification;
 
     // Stats UI
     public GameObject StatsBoard;
