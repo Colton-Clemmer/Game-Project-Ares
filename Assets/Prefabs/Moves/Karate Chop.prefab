@@ -55,3 +55,4 @@ MonoBehaviour:
   _telegraphTime_sett: 100
   _moveTimeLength_sett: 400
   _recoverTime_sett: 300
+  _stunTime_sett: 200

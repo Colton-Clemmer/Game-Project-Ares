@@ -6,7 +6,6 @@ using TMPro;
 
 public class Monster : MonoBehaviour
 {
-    public bool Generated;
     public List<Move> Moves;
     public Utils.Type MainType;
     public Utils.Type SubType;
@@ -20,9 +19,13 @@ public class Monster : MonoBehaviour
     public int SpAttack;
     public int SpDefence;
 
+    public bool Generated;
     public bool Captured;
+    public bool Stunned;
     public int UsingMove = -1;
 
+    [SerializeField] private float _attackWeight_sett = .5f;
+    [SerializeField] private float _damageNumberForce_sett = 100;
     private int _maxStartingStat_sett = 5;
     private int _maxMoves_sett = 4;
     private int _minStartHealth_sett = 20;
@@ -39,6 +42,7 @@ public class Monster : MonoBehaviour
     [SerializeField] private GameObject _moveUseBackGround;
     [SerializeField] private TextMeshPro _useMoveValue;
     [SerializeField] private GameObject _healthBar;
+    [SerializeField] private GameObject _damageNumber;
 
     void Start()
     {
@@ -46,16 +50,18 @@ public class Monster : MonoBehaviour
         // Add move level requirements
         Generate(1);
         _updateText();
+        UsingMove = -1;
     }
 
     void Update()
     {
         if (Captured)
         {
-            if (UsingMove == -1)
+            if (UsingMove == -1 && !Stunned)
             {
                 Utils.Util.Player.GetComponent<Player>().UpdateFn();
-            } else 
+            }
+            else
             {
                 Utils.Camera.transform.position = transform.position;
             }
@@ -72,7 +78,7 @@ public class Monster : MonoBehaviour
         {
             GenerateMove();
         }
-        for (var i = 0; i < lvl;i++)
+        for (var i = 0; i < lvl; i++)
         {
             LevelUp();
         }
@@ -92,7 +98,7 @@ public class Monster : MonoBehaviour
 
         var moveList = useMainType ? mainTypeMoves : useSubType ? subTypeMoves : allMoves;
 
-        var moveIndex = (int) (UnityEngine.Random.value * moveList.Count());
+        var moveIndex = (int)(UnityEngine.Random.value * moveList.Count());
         if (moveIndex == moveList.Count())
         {
             moveIndex = moveList.Count() - 1;
@@ -102,7 +108,7 @@ public class Monster : MonoBehaviour
             GenerateMove(attempt + 1);
             return;
         }
-        if (Moves.Any(m => moveList[moveIndex].ID == m.ID)) 
+        if (Moves.Any(m => moveList[moveIndex].ID == m.ID))
         {
             GenerateMove(attempt + 1);
             return;
@@ -122,6 +128,7 @@ public class Monster : MonoBehaviour
 
     private void _updateHealthBar()
     {
+        _healthBar.SetActive(true);
         var healthScale = _healthBar.transform.localScale;
         healthScale.x = CurrentHealth / MaxHealth;
         _healthBar.transform.localScale = healthScale;
@@ -131,15 +138,15 @@ public class Monster : MonoBehaviour
     {
         if (statsDone == null) statsDone = new List<int>();
         if (remainingPoints <= 0) return;
-        var stat = (int) (UnityEngine.Random.value * 6);
+        var stat = (int)(UnityEngine.Random.value * 6);
         if (stat == 6) stat = 5;
-        if (statsDone.Contains(stat)) 
+        if (statsDone.Contains(stat))
         {
             _increaseStats(remainingPoints, statsDone);
             return;
         }
         statsDone.Add(stat);
-        var amount = (int) (UnityEngine.Random.value * _maxStartingStat_sett);
+        var amount = (int)(UnityEngine.Random.value * _maxStartingStat_sett);
         remainingPoints -= amount;
         switch (stat)
         {
@@ -170,15 +177,16 @@ public class Monster : MonoBehaviour
     private void _pickType()
     {
         var hasSubType = UnityEngine.Random.value > _singleTypeChance_sett;
-        var typeIndex = (int) (UnityEngine.Random.value * 15);
+        var typeIndex = (int)(UnityEngine.Random.value * 15);
         if (typeIndex == 15) typeIndex = 15;
-        MainType = (Utils.Type) typeIndex;
+        MainType = (Utils.Type)typeIndex;
         // TODO: Add weights depending upon the initialized stats to determine type
         if (hasSubType)
         {
-            typeIndex = (int) (UnityEngine.Random.value * 15);
-            SubType = (Utils.Type) typeIndex;
-        } else 
+            typeIndex = (int)(UnityEngine.Random.value * 15);
+            SubType = (Utils.Type)typeIndex;
+        }
+        else
         {
             SubType = MainType;
         }
@@ -187,12 +195,12 @@ public class Monster : MonoBehaviour
     public void LevelUp()
     {
         var highestStatBestChance = UnityEngine.Random.value > .5f;
-        MaxHealth += (int) (_healthStat * .25f);
+        MaxHealth += (int)(_healthStat * .25f);
         if (highestStatBestChance)
         {
             var totalStats = Attack + Speed + Defence + SpAttack + SpDefence;
-            var levelUpIndex = (int) (UnityEngine.Random.value * totalStats);
-            var increase = (int) (UnityEngine.Random.value * _maxStatIncreasePerLevel_sett) + 1;
+            var levelUpIndex = (int)(UnityEngine.Random.value * totalStats);
+            var increase = (int)(UnityEngine.Random.value * _maxStatIncreasePerLevel_sett) + 1;
             if (levelUpIndex < Attack)
             {
                 Attack += increase;
@@ -229,15 +237,49 @@ public class Monster : MonoBehaviour
     public void EndMove()
     {
         _moveUseBackGround.SetActive(false);
+        if (UsingMove != -1)
+        {
+            Moves[UsingMove].CancelMove();
+        }
+        GetComponent<Animator>().SetTrigger("Stop_Telegraph");
+        UsingMove = -1;
+    }
+
+    IEnumerator _stunCoroutine;
+    
+    IEnumerator _stunFn(Move move)
+    {
+        Stunned = true;
+        GetComponent<Rigidbody2D>().constraints = RigidbodyConstraints2D.FreezeAll;
+        yield return new WaitForSeconds((float) move._stunTime_sett / 1000f);
+        GetComponent<Rigidbody2D>().constraints = RigidbodyConstraints2D.FreezeRotation;
+        Stunned = false;
+    }
+
+    private void _receiveDamage(Move move, Monster attackingMonster)
+    {
+        attackingMonster.EndMove();
+        var damage = (float)move.Damage * Utils.GetTypeRelation(move.MainType, MainType);
+        float attack =  move.MainType == attackingMonster.MainType ? attackingMonster.SpAttack : attackingMonster.Attack;
+        float defence = move.MainType == MainType ? SpDefence : Defence;
+        var amount = (int)(damage * (attack / defence) * _attackWeight_sett);
+        CurrentHealth -= amount;
+        Instantiate(_damageNumber);
+        _damageNumber.transform.position = transform.position + ((transform.position - attackingMonster.transform.position).normalized * .5f);
+        _damageNumber.GetComponent<TextMeshPro>().text = amount.ToString();
+        _updateHealthBar();
+        if (move._stunTime_sett > 0)
+        {
+            _stunCoroutine = _stunFn(move);
+            StartCoroutine(_stunCoroutine);
+        }
     }
 
     void OnCollisionEnter2D(Collision2D col)
     {
         var monster = col.gameObject.GetComponent<Monster>();
         if (monster == null || monster.UsingMove == -1) return;
-        var move = monster.Moves[UsingMove];
-        var damage = (float) move.Damage * Utils.GetTypeRelation(move.MainType, MainType);
-        CurrentHealth -= (int) (damage * ((float) monster.Attack / 20f));
-        _updateHealthBar();
+        var move = monster.Moves[monster.UsingMove];
+        _receiveDamage(move, monster);
     }
 }

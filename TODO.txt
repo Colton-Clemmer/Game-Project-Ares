@@ -1,0 +1,5 @@
+Add capture time and percentage chance based on health
+Capture ball should stop after some time if it doesn't hit anything
+Stamina bar
+Endurance bar
+Experiance bar
