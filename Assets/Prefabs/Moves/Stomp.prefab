@@ -52,7 +52,7 @@ MonoBehaviour:
   Stamina: 20
   Accuracy: 100
   _leapForce_sett: 300
-  _telegraphTime_sett: 400
+  _telegraphTime_sett: 600
   _moveTimeLength_sett: 400
   _recoverTime_sett: 200
   _stunTime_sett: 200

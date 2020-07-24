@@ -29,18 +29,20 @@ public class Move : MonoBehaviour
     IEnumerator MoveFn()
     {
         yield return new WaitForSeconds(_telegraphTime_sett / 1000f);
-        _parent.GetComponent<Animator>().SetTrigger("Stop_Telegraph");
         if (!_cancelled)
         {
+            _parent.GetComponent<Animator>().SetTrigger("Mv_Stomp");
             var rb = _parent.GetComponent<Rigidbody2D>();
             rb.AddForce(_moveDirection * _leapForce_sett);
             yield return new WaitForSeconds(_moveTimeLength_sett / 1000f);
             if (!_cancelled)
             {
+                _parent.GetComponent<Animator>().SetTrigger("Recover");
                 rb.velocity = Vector3.zero;
                 yield return new WaitForSeconds(_recoverTime_sett / 1000f);
                 if (!_cancelled)
                 {
+                    _parent.GetComponent<Animator>().SetTrigger("Stop_Recover");
                     _parent.GetComponent<Monster>().UsingMove = -1;
                     var mon = _parent.GetComponent<Monster>();
                     if (mon != null)
@@ -59,6 +61,12 @@ public class Move : MonoBehaviour
 
     public void Execute(Vector3 direction, GameObject parent)
     {
+        parent.GetComponent<Rigidbody2D>().velocity = Vector3.zero;
+        var animator = parent.GetComponent<Animator>();
+        animator.ResetTrigger("Telegraph");
+        animator.ResetTrigger("Mv_Stomp");
+        animator.ResetTrigger("Recover");
+        animator.ResetTrigger("Stop_Recover");
         _cancelled = false;
         _parent = parent;
         _moveDirection = direction;

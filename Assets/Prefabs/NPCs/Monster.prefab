@@ -405,6 +405,7 @@ MonoBehaviour:
   Stamina: 100
   CurrentStamina: 100
   CurrentEndurance: 100
+  Experience: 0
   Level: 0
   Speed: 0
   Attack: 0
@@ -420,6 +421,7 @@ MonoBehaviour:
   _attackWeight_sett: 0.5
   _damageNumberForce_sett: 100
   _enduranceDivider_sett: 4
+  _experienceMultiplier: 1
   _levelValue: {fileID: 5999862308043034058}
   _typeValue: {fileID: 4861872592889553931}
   _subTypeValue: {fileID: 4469427185284382732}
@@ -427,6 +429,7 @@ MonoBehaviour:
   _useMoveValue: {fileID: 5979477994666462323}
   _healthBar: {fileID: 3648804437085947225}
   _damageNumber: {fileID: 5518011725664654320, guid: 84e242f4f1c9426a380d7e20ea0b98c0, type: 3}
+  _experienceText: {fileID: 0}
 --- !u!1 &3648804437085947225
 GameObject:
   m_ObjectHideFlags: 0
