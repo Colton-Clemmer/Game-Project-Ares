@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 using UnityEngine;
+using PolyNav;
 using TMPro;
 
 public class Monster : MonoBehaviour
@@ -17,7 +18,7 @@ public class Monster : MonoBehaviour
     public int CurrentStamina = 100;
     public int CurrentEndurance = 100;
     public int Experience;
-    public int Level;
+    public int Level = 1;
     public int Speed;
     public int Attack;
     public int Defence;
@@ -48,6 +49,9 @@ public class Monster : MonoBehaviour
     public bool Dead
     { get { return CurrentHealth <= 0; } }
 
+    public GameObject Target;
+    public GameObject Home;
+
     [SerializeField] private TextMeshPro _levelValue;
     [SerializeField] private TextMeshPro _typeValue;
     [SerializeField] private TextMeshPro _subTypeValue;
@@ -58,11 +62,15 @@ public class Monster : MonoBehaviour
     [SerializeField] private GameObject _damageNumber;
     [SerializeField] private GameObject _experienceText;
 
+    private float _homeCloseDistance_sett = .5f;
+    private float _distanceToHome
+    { get { return (transform.position - Home.transform.position).magnitude; } }
+
     void Start()
     {
         // TODO: Add moves as monsters level up
         // Add move level requirements
-        Generate(1);
+        Generate(Level);
         _updateText();
         UsingMove = -1;
     }
@@ -78,6 +86,21 @@ public class Monster : MonoBehaviour
             else
             {
                 Utils.Camera.transform.position = transform.position;
+            }
+        } else
+        {
+            var nav = GetComponent<PolyNavAgent>();
+            if (Target == null && _distanceToHome < _homeCloseDistance_sett)
+            {
+                nav.Stop();
+            }
+            if (Target == null && _distanceToHome > _homeCloseDistance_sett)
+            {
+                nav.SetDestination(Home.transform.position);
+            }
+            if (Target != null)
+            {
+                nav.SetDestination(Target.transform.position);
             }
         }
     }

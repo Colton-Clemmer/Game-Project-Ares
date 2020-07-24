@@ -6,3 +6,6 @@ Feedback for switching monsters too fast
 Stamina regen should delay longer after a move
 Make killing enemies that are lower leveled than current monster give less xp
 Add criticals and wiffs
+AI controlled monsters that are on your team (release current monster and turn back to trainer)
+only give damage when actually performing the move, not wind up or cool down
+Add dodge mechanics and allow AI to utilize
