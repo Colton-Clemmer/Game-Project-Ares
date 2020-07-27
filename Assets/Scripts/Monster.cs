@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using System.IO;
 using UnityEngine;
 using PolyNav;
 using TMPro;
+using NeuralNetworks;
 
 public class Monster : MonoBehaviour
 {
@@ -45,6 +47,7 @@ public class Monster : MonoBehaviour
     private float _baseMainTypeMoveChance_sett = .4f;
     private float _baseSubTypeMoveChance_sett = .3f;
     private float _experienceNotificationTime_sett = 1500;
+    private float _useMoveThreshold = .7f;
 
     public bool Dead
     { get { return CurrentHealth <= 0; } }
@@ -66,10 +69,37 @@ public class Monster : MonoBehaviour
     private float _distanceToHome
     { get { return (transform.position - Home.transform.position).magnitude; } }
 
+    private float _distanceToTarget
+    { get { return Target == null ? 200f : (transform.position - Target.transform.position).magnitude; } }
+
+    private NeuralNetwork _brain;
+    private string _brainPath = "../Neural_Data/monster.json";
+    private double[] _brainInput;
+    private double[] _brainDecision;
+
+    /*
+    Inputs:
+        confidence from move 0 - 3 networks
+        average distance needed
+        distance to player
+        distance to home
+    Outputs:
+        use move 0 - 3 (four outputs)
+        idle 0 - 1
+        follow 0 - 1
+        retreat 0 - 1
+    */
+
     void Start()
     {
         // TODO: Add moves as monsters level up
         // Add move level requirements
+        if (File.Exists(_brainPath))
+        {
+            _brain = NeuralNetwork.Load(_brainPath);
+        } else {
+            _brain = new NeuralNetwork(6, 30, 7);
+        }
         Generate(Level);
         _updateText();
         UsingMove = -1;
@@ -89,19 +119,62 @@ public class Monster : MonoBehaviour
             }
         } else
         {
-            var nav = GetComponent<PolyNavAgent>();
-            if (Target == null && _distanceToHome < _homeCloseDistance_sett)
+            _wildUpdate();
+        }
+    }
+
+    private void _wildUpdate()
+    {
+        var confidenceInput = new double[] { (double) _distanceToTarget , (double) _distanceToHome };
+        var moveConfidences = Moves.Select(m => m.MoveConfidence.FeedForward(confidenceInput)).ToList();
+        double averageDistanceNeeded = moveConfidences.Average(c => c[1]);
+        var inp = new double[7] { 
+            (double) moveConfidences[0][0], 
+            (double) moveConfidences[1][0], 
+            Moves.Count() < 3 ? 0 :(double) moveConfidences[2][0], 
+            Moves.Count() < 4 ? 0 : (double) moveConfidences[3][0],
+            averageDistanceNeeded,
+            (double) _distanceToTarget,
+            (double) _distanceToHome
+        };
+        var output = _brain.FeedForward(inp);
+
+        if (Target != null && UsingMove == -1)
+        {
+            _brainInput = inp;
+            _brainDecision = output.Select(o => (double) o).ToArray();
+            for (var i = 0; i < Moves.Count();i++)
             {
-                nav.Stop();
+                Moves[i].ConfidenceInput = confidenceInput;
+                Moves[i].ConfidenceDecision = moveConfidences[i].Select(c => (double) c).ToArray();
+                if (output[i] > _useMoveThreshold)
+                {
+                    UseMove(i, (transform.position - Target.transform.position).normalized);
+                    break;
+                }
             }
-            if (Target == null && _distanceToHome > _homeCloseDistance_sett)
-            {
-                nav.SetDestination(Home.transform.position);
-            }
-            if (Target != null)
-            {
-                nav.SetDestination(Target.transform.position);
-            }
+        }
+        Debug.Log(output[0] + " " + output[1] + " " + output[2] + " " + output[3] + " " + output[4] + " " + output[5] + " " + output[6]);
+
+        var nav = GetComponent<PolyNavAgent>();
+        if (output[4] > _useMoveThreshold)
+        {
+            nav.Stop();
+        }
+
+        if (output[5] > _useMoveThreshold && Target != null)
+        {
+            nav.SetDestination(Target.transform.position);
+        }
+
+        if (output[6] > _useMoveThreshold)
+        {
+            nav.SetDestination(Home.transform.position);
+        }
+
+        if (output[5] < _useMoveThreshold && output[6] < _useMoveThreshold)
+        {
+            nav.Stop();
         }
     }
 
@@ -154,6 +227,14 @@ public class Monster : MonoBehaviour
         var newMove = Instantiate(moveList[moveIndex]);
         newMove.transform.SetParent(transform);
         newMove.transform.position = Vector3.zero;
+        newMove.ConfidencePath = "../Neural_Data/Mv_" + newMove.Name + ".json";
+        if (File.Exists(newMove.ConfidencePath))
+        {
+            newMove.MoveConfidence = NeuralNetwork.Load(newMove.ConfidencePath);
+        } else
+        {
+            newMove.MoveConfidence = new NeuralNetwork(2, 10, 2);
+        }
         Moves.Add(newMove.GetComponent<Move>());
     }
 
@@ -298,8 +379,51 @@ public class Monster : MonoBehaviour
         Stunned = false;
     }
 
+    public void PraiseAttack(int times = 1)
+    {
+        if (times == 0)
+        {
+            _brain.Save(_brainPath);
+            Moves[UsingMove].MoveConfidence.Save(Moves[UsingMove].ConfidencePath);
+            return;
+        }
+        _brain.Backpropagate(_brainInput, _brainDecision);
+        Moves[UsingMove].MoveConfidence.Backpropagate(Moves[UsingMove].ConfidenceInput, Moves[UsingMove].ConfidenceDecision);
+        times--;
+        PraiseAttack(times);
+    }
+
+    public void Shame(int times = 1)
+    {
+        if (times == 0)
+        {
+            _brain.Save(_brainPath);
+            Moves[UsingMove].MoveConfidence.Save(Moves[UsingMove].ConfidencePath);
+            return;
+        }
+        _brain.Backpropagate(_brainInput, new double[] {
+            _brainDecision[0], 
+            _brainDecision[1], 
+            _brainDecision[2], 
+            _brainDecision[3], 
+            UnityEngine.Random.value,
+            UnityEngine.Random.value,
+            UnityEngine.Random.value
+        });
+        times--;
+        Shame(times);
+    }
+
     private void _receiveDamage(Move move, Monster attackingMonster)
     {
+        if (!attackingMonster.Captured)
+        {
+            attackingMonster.PraiseAttack();
+        }
+        if (!Captured)
+        {
+            Shame();
+        }
         attackingMonster.EndMove();
         var damage = (float)move.Damage * Utils.GetTypeRelation(move.MainType, MainType);
         float attack =  move.MainType == attackingMonster.MainType ? attackingMonster.SpAttack : attackingMonster.Attack;

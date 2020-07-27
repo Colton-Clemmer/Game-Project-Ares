@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using NeuralNetworks;
 
 public class Move : MonoBehaviour
 {
@@ -25,6 +26,20 @@ public class Move : MonoBehaviour
     private GameObject _parent;
     private Vector3 _moveDirection;
 
+    /*
+    Inputs:
+        distance to target
+        distance to home
+    Outputs:
+        Confidence in successful attack
+        Distance needed
+    */
+
+    public NeuralNetwork MoveConfidence;
+    public string ConfidencePath;
+    public double[] ConfidenceInput;
+    public double[] ConfidenceDecision;
+
     IEnumerator MoveCoroutine;
     IEnumerator MoveFn()
     {
@@ -40,9 +55,9 @@ public class Move : MonoBehaviour
                 _parent.GetComponent<Animator>().SetTrigger("Recover");
                 rb.velocity = Vector3.zero;
                 yield return new WaitForSeconds(_recoverTime_sett / 1000f);
+                _parent.GetComponent<Animator>().SetTrigger("Stop_Recover");
                 if (!_cancelled)
                 {
-                    _parent.GetComponent<Animator>().SetTrigger("Stop_Recover");
                     _parent.GetComponent<Monster>().UsingMove = -1;
                     var mon = _parent.GetComponent<Monster>();
                     if (mon != null)
@@ -50,7 +65,16 @@ public class Move : MonoBehaviour
                         mon.EndMove();
                     }
                 }
+            } else 
+            {
+                _parent.GetComponent<Animator>().SetTrigger("Recover");
+                _parent.GetComponent<Animator>().SetTrigger("Stop_Recover");
             }
+        } else 
+        {
+            _parent.GetComponent<Animator>().SetTrigger("Mv_Stomp");
+            _parent.GetComponent<Animator>().SetTrigger("Recover");
+            _parent.GetComponent<Animator>().SetTrigger("Stop_Recover");
         }
     }
 

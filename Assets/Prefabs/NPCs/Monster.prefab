@@ -418,11 +418,12 @@ MonoBehaviour:
   UsingMove: 0
   _staminaRegenTime_sett: 200
   _staminaRegenDelay_sett: 600
-  _attackWeight_sett: 0.5
+  _attackWeight_sett: 0.25
   _damageNumberForce_sett: 100
   _enduranceDivider_sett: 4
   _experienceMultiplier: 1
   Target: {fileID: 0}
+  Home: {fileID: 0}
   _levelValue: {fileID: 5999862308043034058}
   _typeValue: {fileID: 4861872592889553931}
   _subTypeValue: {fileID: 4469427185284382732}
