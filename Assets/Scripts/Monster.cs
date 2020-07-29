@@ -47,7 +47,7 @@ public class Monster : MonoBehaviour
     private float _baseMainTypeMoveChance_sett = .4f;
     private float _baseSubTypeMoveChance_sett = .3f;
     private float _experienceNotificationTime_sett = 1500;
-    private float _useMoveThreshold = .7f;
+    private float _useMoveThreshold = .5f;
 
     public bool Dead
     { get { return CurrentHealth <= 0; } }
@@ -73,18 +73,18 @@ public class Monster : MonoBehaviour
     { get { return Target == null ? 200f : (transform.position - Target.transform.position).magnitude; } }
 
     private NeuralNetwork _brain;
-    private string _brainPath = "../Neural_Data/monster.json";
+    private string _brainPath = "Assets/Neural_Data/monster.json";
     private double[] _brainInput;
     private double[] _brainDecision;
 
     /*
     Inputs:
-        confidence from move 0 - 3 networks
+        average confidence from move 0 - 3 networks
         average distance needed
         distance to player
         distance to home
     Outputs:
-        use move 0 - 3 (four outputs)
+        use move (will use the move with the highest confidence)
         idle 0 - 1
         follow 0 - 1
         retreat 0 - 1
@@ -98,11 +98,13 @@ public class Monster : MonoBehaviour
         {
             _brain = NeuralNetwork.Load(_brainPath);
         } else {
-            _brain = new NeuralNetwork(6, 30, 7);
+            _brain = new NeuralNetwork(4, 30, 4);
         }
         Generate(Level);
         _updateText();
         UsingMove = -1;
+        _wildUpdateCoroutine = _wildUpdate();
+        StartCoroutine(_wildUpdateCoroutine);
     }
 
     void Update()
@@ -117,22 +119,20 @@ public class Monster : MonoBehaviour
             {
                 Utils.Camera.transform.position = transform.position;
             }
-        } else
-        {
-            _wildUpdate();
         }
     }
 
-    private void _wildUpdate()
+    IEnumerator _wildUpdateCoroutine;
+
+    IEnumerator _wildUpdate()
     {
+        yield return new WaitForSeconds(.2f);
         var confidenceInput = new double[] { (double) _distanceToTarget , (double) _distanceToHome };
         var moveConfidences = Moves.Select(m => m.MoveConfidence.FeedForward(confidenceInput)).ToList();
         double averageDistanceNeeded = moveConfidences.Average(c => c[1]);
-        var inp = new double[7] { 
-            (double) moveConfidences[0][0], 
-            (double) moveConfidences[1][0], 
-            Moves.Count() < 3 ? 0 :(double) moveConfidences[2][0], 
-            Moves.Count() < 4 ? 0 : (double) moveConfidences[3][0],
+        var averageConfidence = moveConfidences.Average(c => (double) c[0]);
+        var inp = new double[4] { 
+            averageConfidence,
             averageDistanceNeeded,
             (double) _distanceToTarget,
             (double) _distanceToHome
@@ -143,38 +143,60 @@ public class Monster : MonoBehaviour
         {
             _brainInput = inp;
             _brainDecision = output.Select(o => (double) o).ToArray();
-            for (var i = 0; i < Moves.Count();i++)
+            if (output[0] > _useMoveThreshold)
             {
-                Moves[i].ConfidenceInput = confidenceInput;
-                Moves[i].ConfidenceDecision = moveConfidences[i].Select(c => (double) c).ToArray();
-                if (output[i] > _useMoveThreshold)
+                var moveIndex = -1;
+                var highestConfidence = 0;
+                for (var i = 0; i < Moves.Count(); i++)
                 {
-                    UseMove(i, (transform.position - Target.transform.position).normalized);
-                    break;
+                    Moves[i].ConfidenceInput = confidenceInput;
+                    Moves[i].ConfidenceDecision = moveConfidences[i].Select(c => (double) c).ToArray();
+                    if (moveConfidences[i][0] > highestConfidence)
+                    {
+                        moveIndex = i;
+                    
+                    }
                 }
+                UseMove(moveIndex, (Target.transform.position - transform.position).normalized);
             }
         }
-        Debug.Log(output[0] + " " + output[1] + " " + output[2] + " " + output[3] + " " + output[4] + " " + output[5] + " " + output[6]);
+        Debug.Log(averageConfidence + " " + output[0] + " " + output[1] + " " + output[2] + " " + output[3]);
 
         var nav = GetComponent<PolyNavAgent>();
-        if (output[4] > _useMoveThreshold)
+        var stopConfidence = output[1];
+        var goToTargetConfidence = output[2];
+        var goToHomeConfidence = output[3];
+        var stopped = false;
+        if (stopConfidence > _useMoveThreshold)
         {
             nav.Stop();
+            stopped = true;
         }
 
-        if (output[5] > _useMoveThreshold && Target != null)
+        if (goToTargetConfidence > _useMoveThreshold && Target != null)
         {
             nav.SetDestination(Target.transform.position);
         }
 
-        if (output[6] > _useMoveThreshold)
+        if (goToHomeConfidence > _useMoveThreshold)
         {
             nav.SetDestination(Home.transform.position);
         }
 
-        if (output[5] < _useMoveThreshold && output[6] < _useMoveThreshold)
+        if (goToTargetConfidence < _useMoveThreshold && goToHomeConfidence < _useMoveThreshold)
         {
             nav.Stop();
+            stopped = true;
+        }
+
+        if (stopped && UsingMove == -1)
+        {
+            GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+        }
+        if (!Captured)
+        {
+            _wildUpdateCoroutine = _wildUpdate();
+            StartCoroutine(_wildUpdateCoroutine);
         }
     }
 
@@ -184,6 +206,7 @@ public class Monster : MonoBehaviour
         _increaseStats(_startingPoints_sett);
         _pickType();
         MaxHealth = _healthStat + _minStartHealth_sett;
+        CurrentHealth = MaxHealth;
         for (var i = 0; i < _maxMoves_sett; i++)
         {
             GenerateMove();
@@ -227,7 +250,7 @@ public class Monster : MonoBehaviour
         var newMove = Instantiate(moveList[moveIndex]);
         newMove.transform.SetParent(transform);
         newMove.transform.position = Vector3.zero;
-        newMove.ConfidencePath = "../Neural_Data/Mv_" + newMove.Name + ".json";
+        newMove.ConfidencePath = "Assets/Neural_Data/Mv_" + newMove.Name + ".json";
         if (File.Exists(newMove.ConfidencePath))
         {
             newMove.MoveConfidence = NeuralNetwork.Load(newMove.ConfidencePath);
@@ -240,8 +263,6 @@ public class Monster : MonoBehaviour
 
     private void _updateText()
     {
-        _levelValue.text = Level.ToString();
-        _typeValue.text = Utils.GetStringFromType(MainType);
         _subTypeValue.text = MainType == SubType ? "" : Utils.GetStringFromType(SubType);
     }
 
@@ -256,7 +277,6 @@ public class Monster : MonoBehaviour
     private void _increaseStats(int remainingPoints, List<int> statsDone = null)
     {
         if (statsDone == null) statsDone = new List<int>();
-        if (remainingPoints <= 0) return;
         var stat = (int)(UnityEngine.Random.value * 6);
         if (stat == 6) stat = 5;
         if (statsDone.Contains(stat))
@@ -290,7 +310,6 @@ public class Monster : MonoBehaviour
         }
         if (statsDone.Count() == 5) statsDone.RemoveAll(s => true);
         if (remainingPoints > 0) _increaseStats(remainingPoints, statsDone);
-        CurrentHealth = MaxHealth;
     }
 
     private void _pickType()
@@ -395,34 +414,27 @@ public class Monster : MonoBehaviour
 
     public void Shame(int times = 1)
     {
-        if (times == 0)
+        for (var i = 0; i < times;i++)
         {
-            _brain.Save(_brainPath);
-            Moves[UsingMove].MoveConfidence.Save(Moves[UsingMove].ConfidencePath);
-            return;
+            _brain.Backpropagate(_brainInput, new double[4] {
+                UnityEngine.Random.value, 
+                UnityEngine.Random.value,
+                UnityEngine.Random.value,
+                UnityEngine.Random.value
+            });
         }
-        _brain.Backpropagate(_brainInput, new double[] {
-            _brainDecision[0], 
-            _brainDecision[1], 
-            _brainDecision[2], 
-            _brainDecision[3], 
-            UnityEngine.Random.value,
-            UnityEngine.Random.value,
-            UnityEngine.Random.value
-        });
-        times--;
-        Shame(times);
+        _brain.Save(_brainPath);
     }
 
     private void _receiveDamage(Move move, Monster attackingMonster)
     {
         if (!attackingMonster.Captured)
         {
-            attackingMonster.PraiseAttack();
+            attackingMonster.PraiseAttack(40);
         }
         if (!Captured)
         {
-            Shame();
+            Shame(20);
         }
         attackingMonster.EndMove();
         var damage = (float)move.Damage * Utils.GetTypeRelation(move.MainType, MainType);
@@ -433,6 +445,7 @@ public class Monster : MonoBehaviour
         Instantiate(_damageNumber);
         _damageNumber.transform.position = transform.position + ((transform.position - attackingMonster.transform.position).normalized * .5f);
         _damageNumber.GetComponent<TextMeshPro>().text = amount.ToString();
+        Debug.Log(amount);
         if (Dead)
         {
             _kill(attackingMonster);

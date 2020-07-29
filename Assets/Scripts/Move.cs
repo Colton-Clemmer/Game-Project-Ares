@@ -43,19 +43,20 @@ public class Move : MonoBehaviour
     IEnumerator MoveCoroutine;
     IEnumerator MoveFn()
     {
+        var animator = _parent.GetComponent<Animator>();
         yield return new WaitForSeconds(_telegraphTime_sett / 1000f);
         if (!_cancelled)
         {
-            _parent.GetComponent<Animator>().SetTrigger("Mv_Stomp");
+            animator.SetTrigger("Mv_Stomp");
             var rb = _parent.GetComponent<Rigidbody2D>();
             rb.AddForce(_moveDirection * _leapForce_sett);
             yield return new WaitForSeconds(_moveTimeLength_sett / 1000f);
             if (!_cancelled)
             {
-                _parent.GetComponent<Animator>().SetTrigger("Recover");
+                animator.SetTrigger("Recover");
                 rb.velocity = Vector3.zero;
                 yield return new WaitForSeconds(_recoverTime_sett / 1000f);
-                _parent.GetComponent<Animator>().SetTrigger("Stop_Recover");
+                animator.SetTrigger("Stop_Recover");
                 if (!_cancelled)
                 {
                     _parent.GetComponent<Monster>().UsingMove = -1;
@@ -67,14 +68,19 @@ public class Move : MonoBehaviour
                 }
             } else 
             {
-                _parent.GetComponent<Animator>().SetTrigger("Recover");
-                _parent.GetComponent<Animator>().SetTrigger("Stop_Recover");
+                animator.Play("Idle");
+                animator.ResetTrigger("Telegraph");
+                animator.ResetTrigger("Mv_Stomp");
+                animator.ResetTrigger("Recover"); 
+                animator.ResetTrigger("Stop_Recover");
             }
         } else 
         {
-            _parent.GetComponent<Animator>().SetTrigger("Mv_Stomp");
-            _parent.GetComponent<Animator>().SetTrigger("Recover");
-            _parent.GetComponent<Animator>().SetTrigger("Stop_Recover");
+            animator.Play("Idle");
+            animator.ResetTrigger("Telegraph");
+            animator.ResetTrigger("Mv_Stomp");
+            animator.ResetTrigger("Recover"); 
+            animator.ResetTrigger("Stop_Recover");
         }
     }
 
@@ -89,7 +95,7 @@ public class Move : MonoBehaviour
         var animator = parent.GetComponent<Animator>();
         animator.ResetTrigger("Telegraph");
         animator.ResetTrigger("Mv_Stomp");
-        animator.ResetTrigger("Recover");
+        animator.ResetTrigger("Recover"); 
         animator.ResetTrigger("Stop_Recover");
         _cancelled = false;
         _parent = parent;

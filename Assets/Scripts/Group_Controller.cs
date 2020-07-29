@@ -1,10 +1,37 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public class Group_Controller : MonoBehaviour
 {
+    public GameObject MonsterPrefab;
+
+    public GameObject Target;
+
     public List<Monster> Monsters;
+
+    void Update()
+    {
+        if (Monsters.Any(m => m == null))
+        {
+            Monsters.RemoveAll(m => m == null);
+        }
+        if (Monsters.Count < 1)
+        {
+            var monster = Instantiate(MonsterPrefab);
+            monster.transform.SetParent(transform);
+            monster.transform.localPosition = Vector3.zero;
+            var m = monster.GetComponent<Monster>();
+            m.Home = gameObject;
+            m.Level = 1;
+            if (Target != null)
+            {
+                m.Target = Target;
+            }
+            Monsters.Add(m);
+        }
+    }
 
     public void StopChase()
     {
@@ -19,6 +46,7 @@ public class Group_Controller : MonoBehaviour
         var monster = col.gameObject.GetComponent<Monster>();
         var player = col.gameObject.GetComponent<Player>();
         if ((player == null && monster == null) || (monster != null && !monster.Captured)) return;
+        Target = col.gameObject;
         foreach (var m in Monsters)
         {
             m.Target = col.gameObject;
