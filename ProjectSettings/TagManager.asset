@@ -8,6 +8,7 @@ TagManager:
   - Game_Manager
   - Nav_Grid
   - Item_Value
+  - Monster
   layers:
   - Default
   - TransparentFX
