@@ -24,7 +24,7 @@ public class Move : MonoBehaviour
     private bool _cancelled;
 
     private GameObject _parent;
-    private Vector3 _moveDirection;
+    public Vector3 MoveDirection;
 
     /*
     Inputs:
@@ -49,7 +49,9 @@ public class Move : MonoBehaviour
         {
             animator.SetTrigger("Mv_Stomp");
             var rb = _parent.GetComponent<Rigidbody2D>();
-            rb.AddForce(_moveDirection * _leapForce_sett);
+            var direction = MoveDirection * _leapForce_sett;
+            Debug.Log(direction);
+            rb.AddForce(direction);
             yield return new WaitForSeconds(_moveTimeLength_sett / 1000f);
             if (!_cancelled)
             {
@@ -99,7 +101,7 @@ public class Move : MonoBehaviour
         animator.ResetTrigger("Stop_Recover");
         _cancelled = false;
         _parent = parent;
-        _moveDirection = direction;
+        MoveDirection = direction;
         parent.GetComponent<Animator>().SetTrigger("Telegraph");
         MoveCoroutine = MoveFn();
         StartCoroutine(MoveCoroutine);

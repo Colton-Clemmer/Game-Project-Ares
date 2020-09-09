@@ -49,6 +49,7 @@ public class Monster : MonoBehaviour
     private float _experienceNotificationTime_sett = 1500;
     private float _maxTargetingDistance_sett = 20;
     private float _defaultStrikeDistance_sett = 2;
+    private float _damagePushForceMultiplier_sett = 10;
     private float _homeStopDistance = .5f;
 
     public bool Dead
@@ -132,12 +133,12 @@ public class Monster : MonoBehaviour
         }
 
         // Go to target if it exists
-        if (Target != null)
+        if (Target != null && !Stunned)
         {
             nav.SetDestination(Target.transform.position);
         }
 
-        if (_distanceToTarget < _defaultStrikeDistance_sett && UsingMove == -1)
+        if (_distanceToTarget < _defaultStrikeDistance_sett && UsingMove == -1 && !Stunned)
         {
             UseMove((int) (UnityEngine.Random.value * Moves.Count()), (Target.transform.position - transform.position).normalized);
         }
@@ -239,7 +240,6 @@ public class Monster : MonoBehaviour
         _healthBar.SetActive(true);
         var healthScale = _healthBar.transform.localScale;
         healthScale.x = (float) CurrentHealth / (float) MaxHealth;
-        Debug.Log(healthScale.x);
         _healthBar.transform.localScale = healthScale;
     }
 
@@ -358,12 +358,18 @@ public class Monster : MonoBehaviour
 
     IEnumerator _stunCoroutine;
     
-    IEnumerator _stunFn(Move move)
+    IEnumerator _stunFn(float stunTime, bool stop = true)
     {
         Stunned = true;
-        GetComponent<Rigidbody2D>().constraints = RigidbodyConstraints2D.FreezeAll;
-        yield return new WaitForSeconds((float) move._stunTime_sett / 1000f);
-        GetComponent<Rigidbody2D>().constraints = RigidbodyConstraints2D.FreezeRotation;
+        if (stop)
+        {
+            GetComponent<Rigidbody2D>().constraints = RigidbodyConstraints2D.FreezeAll;
+        }
+        yield return new WaitForSeconds((float) stunTime / 1000f);
+        if (stop)
+        {
+            GetComponent<Rigidbody2D>().constraints = RigidbodyConstraints2D.FreezeRotation;
+        }
         Stunned = false;
     }
 
@@ -378,17 +384,13 @@ public class Monster : MonoBehaviour
         Instantiate(_damageNumber);
         _damageNumber.transform.position = transform.position + ((transform.position - attackingMonster.transform.position).normalized * .5f);
         _damageNumber.GetComponent<TextMeshPro>().text = amount.ToString();
+        Debug.Log(amount);
         if (Dead)
         {
             _kill(attackingMonster);
             return;
         }
         _updateHealthBar();
-        if (move._stunTime_sett > 0)
-        {
-            _stunCoroutine = _stunFn(move);
-            StartCoroutine(_stunCoroutine);
-        }
     }
 
     private void _kill(Monster attackingMonster)
@@ -463,6 +465,28 @@ public class Monster : MonoBehaviour
         var monster = col.gameObject.GetComponent<Monster>();
         if (monster == null || monster.UsingMove == -1) return;
         var move = monster.Moves[monster.UsingMove];
+        var rb = GetComponent<Rigidbody2D>();
+
+        if (UsingMove != -1)
+        {
+            if (Moves[UsingMove].Damage < move.Damage)
+            {
+                var direction = Moves[UsingMove].MoveDirection.normalized;
+                var enemyDirection = monster.Moves[monster.UsingMove].MoveDirection.normalized;
+                var forceChanger = (float) Moves[UsingMove].Damage / (float) move.Damage;
+                rb.AddForce(enemyDirection + (direction * forceChanger) * _damagePushForceMultiplier_sett);
+                monster.GetComponent<Rigidbody2D>().velocity = Vector3.zero;
+            } else 
+            {
+                rb.velocity = Vector3.zero;
+            }
+        } else 
+        {
+            var direction = monster.Moves[monster.UsingMove].MoveDirection.normalized * _damagePushForceMultiplier_sett;
+            rb.velocity = direction;
+            monster.GetComponent<Rigidbody2D>().velocity = Vector3.zero;
+        }
+
         _receiveDamage(move, monster);
     }
 }
