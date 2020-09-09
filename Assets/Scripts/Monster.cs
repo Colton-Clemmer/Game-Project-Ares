@@ -229,6 +229,8 @@ public class Monster : MonoBehaviour
 
     private void _updateText()
     {
+        _levelValue.text = Level.ToString();
+        _typeValue.text = Utils.GetStringFromType(MainType);
         _subTypeValue.text = MainType == SubType ? "" : Utils.GetStringFromType(SubType);
     }
 
@@ -236,7 +238,8 @@ public class Monster : MonoBehaviour
     {
         _healthBar.SetActive(true);
         var healthScale = _healthBar.transform.localScale;
-        healthScale.x = CurrentHealth / MaxHealth;
+        healthScale.x = (float) CurrentHealth / (float) MaxHealth;
+        Debug.Log(healthScale.x);
         _healthBar.transform.localScale = healthScale;
     }
 
@@ -375,7 +378,6 @@ public class Monster : MonoBehaviour
         Instantiate(_damageNumber);
         _damageNumber.transform.position = transform.position + ((transform.position - attackingMonster.transform.position).normalized * .5f);
         _damageNumber.GetComponent<TextMeshPro>().text = amount.ToString();
-        Debug.Log(amount);
         if (Dead)
         {
             _kill(attackingMonster);
@@ -394,6 +396,15 @@ public class Monster : MonoBehaviour
         if (!Dead) return;
         var experience = Mathf.Pow((float) Math.E, (float) Level) * _experienceMultiplier;
         attackingMonster.AddExperience((int) experience);
+        if (Captured)
+        {
+            var player = Utils.Util.Player.GetComponent<Player>();
+            var monster = player.MonstersCaptured[player.MonsterIndex];
+            if (monster == this)
+            {
+                player.RemoveMonster(this);
+            }
+        }
         Destroy(gameObject);
     }
 

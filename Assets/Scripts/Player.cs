@@ -206,11 +206,54 @@ public class Player : MonoBehaviour
     {
         if (CurrentMonster == null) return;
         var experienceScale = Utils.Util.ExperienceBar.transform.localScale;
-        experienceScale.x = (CurrentMonster.Experience - Mathf.Pow((float) Math.E, (float) CurrentMonster.Level)) / (Mathf.Pow((float) Math.E, (float) CurrentMonster.Level + 1f) - Mathf.Pow((float) Math.E, (float) CurrentMonster.Level));
+        experienceScale.x = Math.Abs((CurrentMonster.Experience - Mathf.Pow((float) Math.E, (float) CurrentMonster.Level)) / (Mathf.Pow((float) Math.E, (float) CurrentMonster.Level + 1f) - Mathf.Pow((float) Math.E, (float) CurrentMonster.Level)));
         Utils.Util.ExperienceBar.transform.localScale = experienceScale;
     }
 
     private int _lastMonsterIndex;
+
+    public void ChangeMonster(int monsterIndex)
+    {
+        MonsterIndex = monsterIndex;
+        if (MonsterIndex >= 0)
+        {
+            Utils.Util.StaminaGauge.SetActive(true);
+            Utils.Util.EnduranceGauge.SetActive(true);
+            Utils.Util.ExperienceGauge.SetActive(true);
+            gameObject.SetActive(false);
+            MonstersCaptured[MonsterIndex].transform.SetParent(null);
+            transform.SetParent(MonstersCaptured[MonsterIndex].transform);
+            for (var i = 0;i < MonstersCaptured.Count();i++)
+            {
+                MonstersCaptured[i].gameObject.SetActive(i == MonsterIndex);
+                if (i != MonsterIndex) MonstersCaptured[i].transform.SetParent(transform);
+            }
+            MonstersCaptured[MonsterIndex].StartStaminaRegen();
+            UpdateExperienceUi();
+        } else 
+        {
+            Utils.Util.StaminaGauge.SetActive(false);
+            Utils.Util.EnduranceGauge.SetActive(false);
+            Utils.Util.ExperienceGauge.SetActive(false);
+            gameObject.SetActive(true);
+            transform.SetParent(null);
+            foreach(var monster in MonstersCaptured)
+            {
+                monster.gameObject.SetActive(false);
+                monster.transform.SetParent(transform);
+            }
+        }
+    }
+
+    public void RemoveMonster(Monster m)
+    {
+        if (CurrentMonster == m)
+        {
+            ChangeMonster(-1);
+        }
+        MonstersCaptured.Remove(m);
+        _updateMonsterUi();
+    }
 
     private void _selectMonster()
     {
@@ -235,34 +278,7 @@ public class Player : MonoBehaviour
         if (_lastMonsterIndex != MonsterIndex)
         {
             _lastMonsterIndex = MonsterIndex;
-            if (MonsterIndex >= 0)
-            {
-                Utils.Util.StaminaGauge.SetActive(true);
-                Utils.Util.EnduranceGauge.SetActive(true);
-                Utils.Util.ExperienceGauge.SetActive(true);
-                gameObject.SetActive(false);
-                MonstersCaptured[MonsterIndex].transform.SetParent(null);
-                transform.SetParent(MonstersCaptured[MonsterIndex].transform);
-                for (var i = 0;i < MonstersCaptured.Count();i++)
-                {
-                    MonstersCaptured[i].gameObject.SetActive(i == MonsterIndex);
-                    if (i != MonsterIndex) MonstersCaptured[i].transform.SetParent(transform);
-                }
-                MonstersCaptured[MonsterIndex].StartStaminaRegen();
-                UpdateExperienceUi();
-            } else 
-            {
-                Utils.Util.StaminaGauge.SetActive(false);
-                Utils.Util.EnduranceGauge.SetActive(false);
-                Utils.Util.ExperienceGauge.SetActive(false);
-                gameObject.SetActive(true);
-                transform.SetParent(null);
-                foreach(var monster in MonstersCaptured)
-                {
-                    monster.gameObject.SetActive(false);
-                    monster.transform.SetParent(transform);
-                }
-            }
+            ChangeMonster(MonsterIndex);
         }
     }
 
