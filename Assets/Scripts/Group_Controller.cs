@@ -43,13 +43,15 @@ public class Group_Controller : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D col)
     {
-        var monster = col.gameObject.GetComponent<Monster>();
         var player = col.gameObject.GetComponent<Player>();
-        if ((player == null && monster == null) || (monster != null && !monster.Captured)) return;
+        if (player == null) return;
         Target = col.gameObject;
-        foreach (var m in Monsters)
-        {
-            m.Target = col.gameObject;
-        }
+    }
+
+    void OnTriggerExit2D(Collider2D col)
+    {
+        var player = col.gameObject.GetComponent<Player>();
+        if (player == null) return;
+        Target = null;
     }
 }

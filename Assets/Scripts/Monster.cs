@@ -47,7 +47,9 @@ public class Monster : MonoBehaviour
     private float _baseMainTypeMoveChance_sett = .4f;
     private float _baseSubTypeMoveChance_sett = .3f;
     private float _experienceNotificationTime_sett = 1500;
-    private float _useMoveThreshold = .5f;
+    private float _maxTargetingDistance_sett = 20;
+    private float _defaultStrikeDistance_sett = 2;
+    private float _homeStopDistance = .5f;
 
     public bool Dead
     { get { return CurrentHealth <= 0; } }
@@ -64,42 +66,16 @@ public class Monster : MonoBehaviour
     [SerializeField] private GameObject _healthBar;
     [SerializeField] private GameObject _damageNumber;
     [SerializeField] private GameObject _experienceText;
+    [SerializeField] private Group_Controller Group;
 
-    private float _homeCloseDistance_sett = .5f;
     private float _distanceToHome
     { get { return (transform.position - Home.transform.position).magnitude; } }
 
     private float _distanceToTarget
     { get { return Target == null ? 200f : (transform.position - Target.transform.position).magnitude; } }
 
-    private NeuralNetwork _brain;
-    private string _brainPath = "Assets/Neural_Data/monster.json";
-    private double[] _brainInput;
-    private double[] _brainDecision;
-
-    /*
-    Inputs:
-        average confidence from move 0 - 3 networks
-        average distance needed
-        distance to player
-        distance to home
-    Outputs:
-        use move (will use the move with the highest confidence)
-        idle 0 - 1
-        follow 0 - 1
-        retreat 0 - 1
-    */
-
     void Start()
     {
-        // TODO: Add moves as monsters level up
-        // Add move level requirements
-        if (File.Exists(_brainPath))
-        {
-            _brain = NeuralNetwork.Load(_brainPath);
-        } else {
-            _brain = new NeuralNetwork(4, 30, 4);
-        }
         Generate(Level);
         _updateText();
         UsingMove = -1;
@@ -122,68 +98,58 @@ public class Monster : MonoBehaviour
         }
     }
 
+    private GameObject _getClosestCapturedMonster(float minDistance)
+    {
+        var monsters = Utils.GetCapturedMonsters();
+        return monsters
+            .Where(m => (m.transform.position - transform.position).magnitude < minDistance)
+            .OrderBy(m => (m.transform.position - transform.position).magnitude).FirstOrDefault();
+    }
+
     IEnumerator _wildUpdateCoroutine;
 
     IEnumerator _wildUpdate()
     {
         yield return new WaitForSeconds(.2f);
-        var confidenceInput = new double[] { (double) _distanceToTarget , (double) _distanceToHome };
-        var moveConfidences = Moves.Select(m => m.MoveConfidence.FeedForward(confidenceInput)).ToList();
-        double averageDistanceNeeded = moveConfidences.Average(c => c[1]);
-        var averageConfidence = moveConfidences.Average(c => (double) c[0]);
-        var inp = new double[4] { 
-            averageConfidence,
-            averageDistanceNeeded,
-            (double) _distanceToTarget,
-            (double) _distanceToHome
-        };
-        var output = _brain.FeedForward(inp);
+        
+        var stopped = false;
+        var nav = GetComponent<PolyNavAgent>();
 
-        if (Target != null && UsingMove == -1)
+        // Player has entered boundary and monster does not have target
+        if (Group.Target != null && Target == null)
         {
-            _brainInput = inp;
-            _brainDecision = output.Select(o => (double) o).ToArray();
-            if (output[0] > _useMoveThreshold)
+            var closestMonster = _getClosestCapturedMonster(_maxTargetingDistance_sett);
+            if (closestMonster != null)
             {
-                var moveIndex = -1;
-                var highestConfidence = 0;
-                for (var i = 0; i < Moves.Count(); i++)
-                {
-                    Moves[i].ConfidenceInput = confidenceInput;
-                    Moves[i].ConfidenceDecision = moveConfidences[i].Select(c => (double) c).ToArray();
-                    if (moveConfidences[i][0] > highestConfidence)
-                    {
-                        moveIndex = i;
-                    
-                    }
-                }
-                UseMove(moveIndex, (Target.transform.position - transform.position).normalized);
+                Target = closestMonster;
             }
         }
-        Debug.Log(averageConfidence + " " + output[0] + " " + output[1] + " " + output[2] + " " + output[3]);
 
-        var nav = GetComponent<PolyNavAgent>();
-        var stopConfidence = output[1];
-        var goToTargetConfidence = output[2];
-        var goToHomeConfidence = output[3];
-        var stopped = false;
-        if (stopConfidence > _useMoveThreshold)
+        // Player has left boundary and target is aquired
+        if (Group.Target == null && Target != null)
         {
-            nav.Stop();
-            stopped = true;
+            Target = null;
         }
 
-        if (goToTargetConfidence > _useMoveThreshold && Target != null)
+        // Go to target if it exists
+        if (Target != null)
         {
             nav.SetDestination(Target.transform.position);
         }
 
-        if (goToHomeConfidence > _useMoveThreshold)
+        if (_distanceToTarget < _defaultStrikeDistance_sett && UsingMove == -1)
+        {
+            UseMove((int) (UnityEngine.Random.value * Moves.Count()), (Target.transform.position - transform.position).normalized);
+        }
+
+        // Go to home if no target
+        if (Target == null)
         {
             nav.SetDestination(Home.transform.position);
         }
 
-        if (goToTargetConfidence < _useMoveThreshold && goToHomeConfidence < _useMoveThreshold)
+        // Stop at home when close
+        if (_distanceToHome < _homeStopDistance && Target == null)
         {
             nav.Stop();
             stopped = true;
@@ -398,44 +364,8 @@ public class Monster : MonoBehaviour
         Stunned = false;
     }
 
-    public void PraiseAttack(int times = 1)
-    {
-        if (times == 0)
-        {
-            _brain.Save(_brainPath);
-            Moves[UsingMove].MoveConfidence.Save(Moves[UsingMove].ConfidencePath);
-            return;
-        }
-        _brain.Backpropagate(_brainInput, _brainDecision);
-        Moves[UsingMove].MoveConfidence.Backpropagate(Moves[UsingMove].ConfidenceInput, Moves[UsingMove].ConfidenceDecision);
-        times--;
-        PraiseAttack(times);
-    }
-
-    public void Shame(int times = 1)
-    {
-        for (var i = 0; i < times;i++)
-        {
-            _brain.Backpropagate(_brainInput, new double[4] {
-                UnityEngine.Random.value, 
-                UnityEngine.Random.value,
-                UnityEngine.Random.value,
-                UnityEngine.Random.value
-            });
-        }
-        _brain.Save(_brainPath);
-    }
-
     private void _receiveDamage(Move move, Monster attackingMonster)
     {
-        if (!attackingMonster.Captured)
-        {
-            attackingMonster.PraiseAttack(40);
-        }
-        if (!Captured)
-        {
-            Shame(20);
-        }
         attackingMonster.EndMove();
         var damage = (float)move.Damage * Utils.GetTypeRelation(move.MainType, MainType);
         float attack =  move.MainType == attackingMonster.MainType ? attackingMonster.SpAttack : attackingMonster.Attack;

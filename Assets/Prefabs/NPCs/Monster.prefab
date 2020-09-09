@@ -266,7 +266,7 @@ GameObject:
   - component: {fileID: 3635052112578745507}
   m_Layer: 0
   m_Name: Monster
-  m_TagString: Untagged
+  m_TagString: Monster
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -432,6 +432,7 @@ MonoBehaviour:
   _healthBar: {fileID: 3648804437085947225}
   _damageNumber: {fileID: 5518011725664654320, guid: 84e242f4f1c9426a380d7e20ea0b98c0, type: 3}
   _experienceText: {fileID: 0}
+  Group: {fileID: 0}
 --- !u!1 &3648804437085947225
 GameObject:
   m_ObjectHideFlags: 0

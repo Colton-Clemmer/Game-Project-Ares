@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -293,5 +294,12 @@ public class Utils : MonoBehaviour
             //     return "Water";
         }
         return 1;
+    }
+
+    public static List<GameObject> GetCapturedMonsters()
+    {
+        return GameObject.FindGameObjectsWithTag("Monster")
+            .Where(m => m.GetComponent<Monster>().Captured)
+            .ToList();
     }
 }
