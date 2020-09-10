@@ -63,6 +63,7 @@ public class Monster : MonoBehaviour
     private float _defaultStrikeDistance_sett = 2;
     private float _damagePushForceMultiplier_sett = 10;
     private float _homeStopDistance = .5f;
+    public float HitEffectDistance_Sett = 1.5f;
 
     #endregion
 
@@ -76,9 +77,8 @@ public class Monster : MonoBehaviour
     [SerializeField] private GameObject _damageNumber;
     [SerializeField] private GameObject _experienceText;
     [SerializeField] private Group_Controller Group;
-    [SerializeField] private GameObject HitEffect;
+    public GameObject HitEffect;
     #endregion
-
 
     #region Computed
     private float _distanceToHome
@@ -95,6 +95,7 @@ public class Monster : MonoBehaviour
         Generate(Level);
         _updateText();
         UsingMove = -1;
+        HitEffect.GetComponent<Hit_Effect>()._monster = this;
         if (!Captured)
         {
             _wildUpdateCoroutine = _wildUpdate();

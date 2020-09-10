@@ -401,6 +401,7 @@ MonoBehaviour:
   Moves: []
   MainType: 0
   SubType: 0
+  Home: {fileID: 0}
   MaxHealth: 0
   CurrentHealth: 0
   Stamina: 100
@@ -417,14 +418,14 @@ MonoBehaviour:
   Captured: 0
   Stunned: 0
   UsingMove: 0
+  Target: {fileID: 0}
   _staminaRegenTime_sett: 200
   _staminaRegenDelay_sett: 600
   _attackWeight_sett: 0.25
   _damageNumberForce_sett: 100
   _enduranceDivider_sett: 4
   _experienceMultiplier: 1
-  Target: {fileID: 0}
-  Home: {fileID: 0}
+  HitEffectDistance_Sett: 1.5
   _levelValue: {fileID: 5999862308043034058}
   _typeValue: {fileID: 4861872592889553931}
   _subTypeValue: {fileID: 4469427185284382732}
@@ -1152,7 +1153,7 @@ GameObject:
   - component: {fileID: 444348855200429120}
   - component: {fileID: 5117560046565619305}
   - component: {fileID: 4995000246035200805}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Hit Effect
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1167,7 +1168,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7185859634055199466}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 17.22, y: 0, z: 0}
+  m_LocalPosition: {x: 13.01, y: -2.11, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 3635052112578745439}
@@ -1211,16 +1212,16 @@ SpriteShapeRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
+  m_SortingLayerID: -968046631
+  m_SortingLayer: 2
   m_SortingOrder: 0
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_MaskInteraction: 0
   m_ShapeTexture: {fileID: 0}
   m_Sprites: []
   m_LocalAABB:
-    m_Center: {x: -0.9529729, y: -0.1466589, z: 0}
-    m_Extent: {x: 2.5505579, y: 4.906104, z: 0}
+    m_Center: {x: 1.7218182, y: 2.201663, z: 0}
+    m_Extent: {x: 2.9791024, y: 2.201663, z: 0}
 --- !u!114 &444348855200429120
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1236,46 +1237,37 @@ MonoBehaviour:
   m_Spline:
     m_IsOpenEnded: 0
     m_ControlPoints:
-    - position: {x: -3.3580248, y: -2.720937, z: 0}
-      leftTangent: {x: 0, y: 0, z: 0}
-      rightTangent: {x: 0, y: 0, z: 0}
-      mode: 0
-      height: 1
-      bevelCutoff: 0
-      bevelSize: 0
-      spriteIndex: 0
-      corner: 1
-    - position: {x: -3.5035307, y: 2.845237, z: 0}
-      leftTangent: {x: 0, y: 0, z: 0}
-      rightTangent: {x: 0, y: 0, z: 0}
-      mode: 0
-      height: 1
-      bevelCutoff: 0
-      bevelSize: 0
-      spriteIndex: 0
-      corner: 1
-    - position: {x: 1.1269838, y: 4.759445, z: 0}
-      leftTangent: {x: 0, y: 0, z: 0}
-      rightTangent: {x: -0.34674478, y: -0.8698642, z: 0}
+    - position: {x: 1.4127724, y: 0.5553464, z: 0}
+      leftTangent: {x: 2.4492533, y: 0.050869405, z: 0}
+      rightTangent: {x: -2.5464683, y: 0.06845176, z: 0}
       mode: 2
       height: 1
       bevelCutoff: 0
       bevelSize: 0
       spriteIndex: 0
       corner: 1
-    - position: {x: -0.9675084, y: -0.38377634, z: 0}
-      leftTangent: {x: -0.29952806, y: 1.4786041, z: 0}
-      rightTangent: {x: 0.09700191, y: -1.5910301, z: 0}
+    - position: {x: -1.224226, y: 2.612513, z: 0}
+      leftTangent: {x: -0.14476311, y: -1.2118409, z: 0}
+      rightTangent: {x: 0.15071988, y: 1.261694, z: 0}
+      mode: 1
+      height: 1
+      bevelCutoff: 0
+      bevelSize: 0
+      spriteIndex: 0
+      corner: 1
+    - position: {x: 1.6828064, y: 4.403326, z: 0}
+      leftTangent: {x: -1.9108188, y: -0.19333982, z: 0}
+      rightTangent: {x: 1.8765396, y: -0.30007458, z: 0}
       mode: 2
       height: 1
       bevelCutoff: 0
       bevelSize: 0
       spriteIndex: 0
       corner: 1
-    - position: {x: 1.597585, y: -5.052763, z: 0}
-      leftTangent: {x: 0, y: 0, z: 0}
-      rightTangent: {x: 0, y: 0, z: 0}
-      mode: 0
+    - position: {x: 4.7009206, y: 2.0695946, z: 0}
+      leftTangent: {x: -0.0463171, y: 2.4216006, z: 0}
+      rightTangent: {x: -0.14442587, y: -1.1977744, z: 0}
+      mode: 2
       height: 1
       bevelCutoff: 0
       bevelSize: 0
@@ -1308,7 +1300,7 @@ BoxCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: -1.555105, y: -0.14666104}
+  m_Offset: {x: 1.6640253, y: 2.464864}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -1319,7 +1311,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 3.896844, y: 7.81795}
+  m_Size: {x: 6.1664524, y: 4.019365}
   m_EdgeRadius: 0
 --- !u!114 &4995000246035200805
 MonoBehaviour:
@@ -1333,6 +1325,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dad39aacfb23967a3b316723e1d90efb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _monster: {fileID: 0}
 --- !u!1 &8163311265281275797
 GameObject:
   m_ObjectHideFlags: 0

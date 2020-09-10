@@ -44,6 +44,7 @@ public class Move : MonoBehaviour
     IEnumerator MoveFn()
     {
         var animator = _parent.GetComponent<Animator>();
+        var mon = _parent.GetComponent<Monster>();
         yield return new WaitForSeconds(_telegraphTime_sett / 1000f);
         if (!_cancelled)
         {
@@ -62,11 +63,11 @@ public class Move : MonoBehaviour
                 if (!_cancelled)
                 {
                     _parent.GetComponent<Monster>().UsingMove = -1;
-                    var mon = _parent.GetComponent<Monster>();
                     if (mon != null)
                     {
                         mon.EndMove();
                     }
+                    mon.HitEffect.SetActive(false);
                 }
             } else 
             {
@@ -75,6 +76,7 @@ public class Move : MonoBehaviour
                 animator.ResetTrigger("Mv_Stomp");
                 animator.ResetTrigger("Recover"); 
                 animator.ResetTrigger("Stop_Recover");
+                mon.HitEffect.SetActive(false);
             }
         } else 
         {
@@ -83,6 +85,7 @@ public class Move : MonoBehaviour
             animator.ResetTrigger("Mv_Stomp");
             animator.ResetTrigger("Recover"); 
             animator.ResetTrigger("Stop_Recover");
+            mon.HitEffect.SetActive(false);
         }
     }
 
@@ -102,6 +105,10 @@ public class Move : MonoBehaviour
         _cancelled = false;
         _parent = parent;
         MoveDirection = direction;
+        var monster = parent.GetComponent<Monster>();
+        monster.HitEffect.SetActive(true);
+        monster.HitEffect.transform.position = monster.transform.position + (direction * monster.HitEffectDistance_Sett);
+        monster.HitEffect.transform.rotation = Quaternion.Euler(direction.x, direction.y, direction.z);
         parent.GetComponent<Animator>().SetTrigger("Telegraph");
         MoveCoroutine = MoveFn();
         StartCoroutine(MoveCoroutine);
