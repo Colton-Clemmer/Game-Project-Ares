@@ -12,15 +12,14 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    #region Data
+
     public List<Monster> MonstersCaptured;
     public List<Utils.Item> Items;
-    public int ItemUseIndex;
-    public int MonsterIndex = -1;
-    public Monster CurrentMonster
-    { get { return MonsterIndex == -1 ? null : MonstersCaptured[MonsterIndex]; } }
 
-    private Rigidbody2D _rb
-    { get { return CurrentMonster == null ? GetComponent<Rigidbody2D>() : CurrentMonster.GetComponent<Rigidbody2D>(); } }
+    #endregion
+
+    #region Settings
 
     [SerializeField] private float _idleStopForce_sett = 10;
     [SerializeField] private float _stopForce_sett = 3;
@@ -29,41 +28,65 @@ public class Player : MonoBehaviour
     [SerializeField] private float _ballStartDistance_sett = 2;
     [SerializeField] private float _ballThrowForce = 10;
     [SerializeField] private float _monsterSwitchMillis = 500;
+    [SerializeField] private float _itemUseMillis = 500;
+    
+    #endregion
+
+    #region State
+
+    public int ItemUseIndex;
+    public int MonsterIndex = -1;
+
     private DateTime _lastMonsterSwitch;
 
-    [SerializeField] private float _itemUseMillis = 500;
     private DateTime _lastItemUsed;
+
+    #endregion
+
+    #region Computed
 
     private Vector3 mouseDirection
     { get { return (transform.position - Camera.main.ScreenToWorldPoint(Input.mousePosition)).normalized * -1; } }
 
-    private void _updateItemText()
+    public Monster CurrentMonster
+    { get { return MonsterIndex == -1 ? null : MonstersCaptured[MonsterIndex]; } }
+
+    private Rigidbody2D _rb
+    { get { return CurrentMonster == null ? GetComponent<Rigidbody2D>() : CurrentMonster.GetComponent<Rigidbody2D>(); } }
+
+    #endregion
+
+    #region Mono
+
+    void Start()
     {
-        if (ItemUseIndex != -1)
+        _lastMonsterIndex = MonsterIndex;
+        _updateItemText();        
+        _updateMonsterUi();
+    }
+ 
+    void Update()
+    {
+        UpdateFn();
+    }
+
+    public void UpdateFn()
+    {
+        Utils.Camera.transform.position = transform.position;
+        _getMovement();
+        _selectMonster();
+        _selectItem();
+        _useMove();
+        _checkForInfo();
+        if (Input.GetKey(KeyCode.Mouse1) && Input.GetKeyDown(KeyCode.Mouse0) && MonsterIndex == -1)
         {
-            switch (Items[ItemUseIndex])
-            {
-                case Utils.Item.Capture_Ball:
-                    Utils.Util.ItemValue.text = "Capture Ball";
-                    break;
-            }
-        } else 
-        {
-            Utils.Util.ItemValue.text = "None";
-        }
-        var indicators = Utils.Util.ItemIndicators;
-        foreach(var indicator in indicators)
-        {
-            indicator.SetActive(false);
-        }
-        if (ItemUseIndex != -1)
-        {
-            for (var i = 0; i < Items.Count(item => item == Items[ItemUseIndex]);i++)
-            {
-                indicators[i].SetActive(true);
-            }
+            _useItem();
         }
     }
+
+    #endregion
+
+    #region UI
 
     private void _updateMonsterUi()
     {
@@ -125,73 +148,6 @@ public class Player : MonoBehaviour
         }
     }
 
-    void Start()
-    {
-        _lastMonsterIndex = MonsterIndex;
-        _updateItemText();        
-        _updateMonsterUi();
-    }
- 
-    void Update()
-    {
-        UpdateFn();
-    }
-
-    public void UpdateFn()
-    {
-        Utils.Camera.transform.position = transform.position;
-        _getMovement();
-        _selectMonster();
-        _selectItem();
-        _useMove();
-        _checkForInfo();
-        if (Input.GetKey(KeyCode.Mouse1) && Input.GetKeyDown(KeyCode.Mouse0) && MonsterIndex == -1)
-        {
-            _useItem();
-        }
-    }
-
-    public void CaptureMonster(GameObject monster)
-    {
-        MonstersCaptured.Add(monster.GetComponent<Monster>());
-        monster.transform.SetParent(transform);
-        monster.transform.localPosition = Vector3.zero;
-        _updateMonsterUi();
-    }
-
-    private void _checkForInfo()
-    {
-        if (CurrentMonster == null) return;
-        if (Input.GetKeyDown(KeyCode.Tab))
-        {
-            Utils.Util.StatsBoard.SetActive(true);
-            Utils.Util.MoveBoard.SetActive(true);
-            _updateMonsterInfoUi();
-        }
-        if (Input.GetKeyUp(KeyCode.Tab))
-        {
-            Utils.Util.StatsBoard.SetActive(false);
-            Utils.Util.MoveBoard.SetActive(false);
-        }
-    }
-
-    private void _useMove()
-    {
-        if (!MonstersCaptured.Any() || MonsterIndex == -1) return;
-        var leftClick = Input.GetKeyDown(KeyCode.Mouse0);
-        var rightClick = Input.GetKeyDown(KeyCode.Mouse1);
-        if (leftClick)
-        {
-            MonstersCaptured[MonsterIndex].UseMove(Input.GetKey(KeyCode.R) ? 2 : 0, mouseDirection);
-            UpdateStaminaUi();
-        }
-        if (rightClick)
-        {
-            MonstersCaptured[MonsterIndex].UseMove(Input.GetKey(KeyCode.R) ? 3 : 1, mouseDirection);
-            UpdateStaminaUi();
-        }
-    }
-
     public void UpdateStaminaUi()
     {
         var staminaScale = Utils.Util.StaminaBar.transform.localScale;
@@ -209,6 +165,38 @@ public class Player : MonoBehaviour
         experienceScale.x = Math.Abs((CurrentMonster.Experience - Mathf.Pow((float) Math.E, (float) CurrentMonster.Level)) / (Mathf.Pow((float) Math.E, (float) CurrentMonster.Level + 1f) - Mathf.Pow((float) Math.E, (float) CurrentMonster.Level)));
         Utils.Util.ExperienceBar.transform.localScale = experienceScale;
     }
+
+    private void _updateItemText()
+    {
+        if (ItemUseIndex != -1)
+        {
+            switch (Items[ItemUseIndex])
+            {
+                case Utils.Item.Capture_Ball:
+                    Utils.Util.ItemValue.text = "Capture Ball";
+                    break;
+            }
+        } else 
+        {
+            Utils.Util.ItemValue.text = "None";
+        }
+        var indicators = Utils.Util.ItemIndicators;
+        foreach(var indicator in indicators)
+        {
+            indicator.SetActive(false);
+        }
+        if (ItemUseIndex != -1)
+        {
+            for (var i = 0; i < Items.Count(item => item == Items[ItemUseIndex]);i++)
+            {
+                indicators[i].SetActive(true);
+            }
+        }
+    }
+
+    #endregion
+
+    #region Monsters
 
     private int _lastMonsterIndex;
 
@@ -282,6 +270,18 @@ public class Player : MonoBehaviour
         }
     }
 
+    public void CaptureMonster(GameObject monster)
+    {
+        MonstersCaptured.Add(monster.GetComponent<Monster>());
+        monster.transform.SetParent(transform);
+        monster.transform.localPosition = Vector3.zero;
+        _updateMonsterUi();
+    }
+
+    #endregion
+
+    #region Items
+
     private void _selectItem()
     {
         var mouseScroll = Input.mouseScrollDelta.y;
@@ -333,6 +333,10 @@ public class Player : MonoBehaviour
         _updateItemText();
     }
 
+    #endregion
+
+    #region Input
+
     private void _getMovement()
     {
         var inputHorizontal = Input.GetAxis("Horizontal");
@@ -381,4 +385,40 @@ public class Player : MonoBehaviour
             rigidBody.velocity = new Vector2(rigidBody.velocity.x, 0);
         }
     }
+
+    private void _useMove()
+    {
+        if (!MonstersCaptured.Any() || MonsterIndex == -1) return;
+        var leftClick = Input.GetKeyDown(KeyCode.Mouse0);
+        var rightClick = Input.GetKeyDown(KeyCode.Mouse1);
+        if (leftClick)
+        {
+            MonstersCaptured[MonsterIndex].UseMove(Input.GetKey(KeyCode.R) ? 2 : 0, mouseDirection);
+            UpdateStaminaUi();
+        }
+        if (rightClick)
+        {
+            MonstersCaptured[MonsterIndex].UseMove(Input.GetKey(KeyCode.R) ? 3 : 1, mouseDirection);
+            UpdateStaminaUi();
+        }
+    }
+
+    // Open/Close info pane
+    private void _checkForInfo()
+    {
+        if (CurrentMonster == null) return;
+        if (Input.GetKeyDown(KeyCode.Tab))
+        {
+            Utils.Util.StatsBoard.SetActive(true);
+            Utils.Util.MoveBoard.SetActive(true);
+            _updateMonsterInfoUi();
+        }
+        if (Input.GetKeyUp(KeyCode.Tab))
+        {
+            Utils.Util.StatsBoard.SetActive(false);
+            Utils.Util.MoveBoard.SetActive(false);
+        }
+    }
+
+    #endregion
 }
