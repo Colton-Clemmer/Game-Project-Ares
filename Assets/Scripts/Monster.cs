@@ -10,9 +10,15 @@ using NeuralNetworks;
 
 public class Monster : MonoBehaviour
 {
+    #region Data
     public List<Move> Moves;
     public Utils.Type MainType;
     public Utils.Type SubType;
+    public GameObject Home;
+
+    #endregion
+
+    #region State
     public int MaxHealth;
     private int _healthStat;
     public int CurrentHealth;
@@ -31,6 +37,12 @@ public class Monster : MonoBehaviour
     public bool Captured;
     public bool Stunned;
     public int UsingMove = -1;
+    private bool _usedMove;
+    public GameObject Target;
+
+    #endregion
+
+    #region Settings
 
     [SerializeField] private float _staminaRegenTime_sett = 200;
     [SerializeField] private float _staminaRegenDelay_sett = 600;
@@ -52,36 +64,42 @@ public class Monster : MonoBehaviour
     private float _damagePushForceMultiplier_sett = 10;
     private float _homeStopDistance = .5f;
 
-    public bool Dead
-    { get { return CurrentHealth <= 0; } }
+    #endregion
 
-    public GameObject Target;
-    public GameObject Home;
-
+    #region References
     [SerializeField] private TextMeshPro _levelValue;
     [SerializeField] private TextMeshPro _typeValue;
     [SerializeField] private TextMeshPro _subTypeValue;
-
     [SerializeField] private GameObject _moveUseBackGround;
     [SerializeField] private TextMeshPro _useMoveValue;
     [SerializeField] private GameObject _healthBar;
     [SerializeField] private GameObject _damageNumber;
     [SerializeField] private GameObject _experienceText;
     [SerializeField] private Group_Controller Group;
+    [SerializeField] private GameObject HitEffect;
+    #endregion
 
+
+    #region Computed
     private float _distanceToHome
     { get { return (transform.position - Home.transform.position).magnitude; } }
-
     private float _distanceToTarget
     { get { return Target == null ? 200f : (transform.position - Target.transform.position).magnitude; } }
+    public bool Dead
+    { get { return CurrentHealth <= 0; } }
+    #endregion
 
+    #region Mono
     void Start()
     {
         Generate(Level);
         _updateText();
         UsingMove = -1;
-        _wildUpdateCoroutine = _wildUpdate();
-        StartCoroutine(_wildUpdateCoroutine);
+        if (!Captured)
+        {
+            _wildUpdateCoroutine = _wildUpdate();
+            StartCoroutine(_wildUpdateCoroutine);
+        }
     }
 
     void Update()
@@ -97,14 +115,6 @@ public class Monster : MonoBehaviour
                 Utils.Camera.transform.position = transform.position;
             }
         }
-    }
-
-    private GameObject _getClosestCapturedMonster(float minDistance)
-    {
-        var monsters = Utils.GetCapturedMonsters();
-        return monsters
-            .Where(m => (m.transform.position - transform.position).magnitude < minDistance)
-            .OrderBy(m => (m.transform.position - transform.position).magnitude).FirstOrDefault();
     }
 
     IEnumerator _wildUpdateCoroutine;
@@ -166,7 +176,19 @@ public class Monster : MonoBehaviour
             StartCoroutine(_wildUpdateCoroutine);
         }
     }
+    #endregion
 
+    #region Utility
+    private GameObject _getClosestCapturedMonster(float minDistance)
+    {
+        var monsters = Utils.GetCapturedMonsters();
+        return monsters
+            .Where(m => (m.transform.position - transform.position).magnitude < minDistance)
+            .OrderBy(m => (m.transform.position - transform.position).magnitude).FirstOrDefault();
+    }
+    #endregion
+
+    #region Stat Manipulation
     public void Generate(int lvl)
     {
         Level = lvl;
@@ -227,22 +249,6 @@ public class Monster : MonoBehaviour
         }
         Moves.Add(newMove.GetComponent<Move>());
     }
-
-    private void _updateText()
-    {
-        _levelValue.text = Level.ToString();
-        _typeValue.text = Utils.GetStringFromType(MainType);
-        _subTypeValue.text = MainType == SubType ? "" : Utils.GetStringFromType(SubType);
-    }
-
-    private void _updateHealthBar()
-    {
-        _healthBar.SetActive(true);
-        var healthScale = _healthBar.transform.localScale;
-        healthScale.x = (float) CurrentHealth / (float) MaxHealth;
-        _healthBar.transform.localScale = healthScale;
-    }
-
     private void _increaseStats(int remainingPoints, List<int> statsDone = null)
     {
         if (statsDone == null) statsDone = new List<int>();
@@ -330,7 +336,61 @@ public class Monster : MonoBehaviour
             }
         }
     }
+    public void ReceiveDamage(Move move, Monster attackingMonster)
+    {
+        attackingMonster.EndMove();
+        var damage = (float)move.Damage * Utils.GetTypeRelation(move.MainType, MainType);
+        float attack =  move.MainType == attackingMonster.MainType ? attackingMonster.SpAttack : attackingMonster.Attack;
+        float defence = move.MainType == MainType ? SpDefence : Defence;
+        var amount = (int)(damage * (attack / defence) * _attackWeight_sett);
+        CurrentHealth -= amount;
+        Instantiate(_damageNumber);
+        _damageNumber.transform.position = transform.position + ((transform.position - attackingMonster.transform.position).normalized * .5f);
+        _damageNumber.GetComponent<TextMeshPro>().text = amount.ToString();
+        Debug.Log(amount);
+        if (Dead)
+        {
+            _kill(attackingMonster);
+            return;
+        }
+        _updateHealthBar();
+    }
+    private void _kill(Monster attackingMonster)
+    {
+        if (!Dead) return;
+        var experience = Mathf.Pow((float) Math.E, (float) Level) * _experienceMultiplier;
+        attackingMonster.AddExperience((int) experience);
+        if (Captured)
+        {
+            var player = Utils.Util.Player.GetComponent<Player>();
+            var monster = player.MonstersCaptured[player.MonsterIndex];
+            if (monster == this)
+            {
+                player.RemoveMonster(this);
+            }
+        }
+        Destroy(gameObject);
+    }
+    #endregion
 
+    #region UI
+    private void _updateText()
+    {
+        _levelValue.text = Level.ToString();
+        _typeValue.text = Utils.GetStringFromType(MainType);
+        _subTypeValue.text = MainType == SubType ? "" : Utils.GetStringFromType(SubType);
+    }
+
+    private void _updateHealthBar()
+    {
+        _healthBar.SetActive(true);
+        var healthScale = _healthBar.transform.localScale;
+        healthScale.x = (float) CurrentHealth / (float) MaxHealth;
+        _healthBar.transform.localScale = healthScale;
+    }
+    #endregion
+
+    #region Moves
     public void UseMove(int moveIndex, Vector3 direction)
     {
         if (UsingMove >= 0) return;
@@ -355,7 +415,9 @@ public class Monster : MonoBehaviour
         GetComponent<Animator>().SetTrigger("Stop_Telegraph");
         UsingMove = -1;
     }
+    #endregion
 
+    #region Time based modifiers
     IEnumerator _stunCoroutine;
     
     IEnumerator _stunFn(float stunTime, bool stop = true)
@@ -372,46 +434,26 @@ public class Monster : MonoBehaviour
         }
         Stunned = false;
     }
-
-    private void _receiveDamage(Move move, Monster attackingMonster)
-    {
-        attackingMonster.EndMove();
-        var damage = (float)move.Damage * Utils.GetTypeRelation(move.MainType, MainType);
-        float attack =  move.MainType == attackingMonster.MainType ? attackingMonster.SpAttack : attackingMonster.Attack;
-        float defence = move.MainType == MainType ? SpDefence : Defence;
-        var amount = (int)(damage * (attack / defence) * _attackWeight_sett);
-        CurrentHealth -= amount;
-        Instantiate(_damageNumber);
-        _damageNumber.transform.position = transform.position + ((transform.position - attackingMonster.transform.position).normalized * .5f);
-        _damageNumber.GetComponent<TextMeshPro>().text = amount.ToString();
-        Debug.Log(amount);
-        if (Dead)
-        {
-            _kill(attackingMonster);
-            return;
-        }
-        _updateHealthBar();
-    }
-
-    private void _kill(Monster attackingMonster)
-    {
-        if (!Dead) return;
-        var experience = Mathf.Pow((float) Math.E, (float) Level) * _experienceMultiplier;
-        attackingMonster.AddExperience((int) experience);
-        if (Captured)
-        {
-            var player = Utils.Util.Player.GetComponent<Player>();
-            var monster = player.MonstersCaptured[player.MonsterIndex];
-            if (monster == this)
-            {
-                player.RemoveMonster(this);
-            }
-        }
-        Destroy(gameObject);
-    }
-
     public void StartStaminaRegen()
     {
+        _staminaRegenCoroutine = _staminaRegenFn();
+        StartCoroutine(_staminaRegenCoroutine);
+    }
+    IEnumerator _staminaRegenCoroutine;
+
+    IEnumerator _staminaRegenFn()
+    {
+        yield return new WaitForSeconds((_usedMove ? _staminaRegenDelay_sett : _staminaRegenTime_sett) / 1000f);
+        if (UsingMove != -1)
+        {
+            _usedMove = true;
+        }
+        if (CurrentStamina < Stamina && UsingMove == -1)
+        {
+            CurrentStamina++;
+            Utils.Util.Player.GetComponent<Player>().UpdateStaminaUi();
+            _usedMove = false;
+        }
         _staminaRegenCoroutine = _staminaRegenFn();
         StartCoroutine(_staminaRegenCoroutine);
     }
@@ -438,55 +480,6 @@ public class Monster : MonoBehaviour
         notification.gameObject.SetActive(false);
         Utils.Util.Player.GetComponent<Player>().UpdateExperienceUi();
     }
+    #endregion
 
-    IEnumerator _staminaRegenCoroutine;
-    private bool _usedMove;
-
-    IEnumerator _staminaRegenFn()
-    {
-        yield return new WaitForSeconds((_usedMove ? _staminaRegenDelay_sett : _staminaRegenTime_sett) / 1000f);
-        if (UsingMove != -1)
-        {
-            _usedMove = true;
-        }
-        if (CurrentStamina < Stamina && UsingMove == -1)
-        {
-            CurrentStamina++;
-            Utils.Util.Player.GetComponent<Player>().UpdateStaminaUi();
-            _usedMove = false;
-        }
-        _staminaRegenCoroutine = _staminaRegenFn();
-        StartCoroutine(_staminaRegenCoroutine);
-        
-    }
-
-    void OnCollisionEnter2D(Collision2D col)
-    {
-        var monster = col.gameObject.GetComponent<Monster>();
-        if (monster == null || monster.UsingMove == -1) return;
-        var move = monster.Moves[monster.UsingMove];
-        var rb = GetComponent<Rigidbody2D>();
-
-        if (UsingMove != -1)
-        {
-            if (Moves[UsingMove].Damage < move.Damage)
-            {
-                var direction = Moves[UsingMove].MoveDirection.normalized;
-                var enemyDirection = monster.Moves[monster.UsingMove].MoveDirection.normalized;
-                var forceChanger = (float) Moves[UsingMove].Damage / (float) move.Damage;
-                rb.AddForce(enemyDirection + (direction * forceChanger) * _damagePushForceMultiplier_sett);
-                monster.GetComponent<Rigidbody2D>().velocity = Vector3.zero;
-            } else 
-            {
-                rb.velocity = Vector3.zero;
-            }
-        } else 
-        {
-            var direction = monster.Moves[monster.UsingMove].MoveDirection.normalized * _damagePushForceMultiplier_sett;
-            rb.velocity = direction;
-            monster.GetComponent<Rigidbody2D>().velocity = Vector3.zero;
-        }
-
-        _receiveDamage(move, monster);
-    }
 }

@@ -13,6 +13,7 @@ using UnityEngine;
 public class Player : MonoBehaviour
 {
     #region Data
+    [SerializeField] private GameObject StartingMonster;
 
     public List<Monster> MonstersCaptured;
     public List<Utils.Item> Items;
@@ -61,6 +62,7 @@ public class Player : MonoBehaviour
     void Start()
     {
         _lastMonsterIndex = MonsterIndex;
+        CaptureMonster(StartingMonster);
         _updateItemText();        
         _updateMonsterUi();
     }
@@ -272,6 +274,8 @@ public class Player : MonoBehaviour
 
     public void CaptureMonster(GameObject monster)
     {
+        monster.GetComponent<Monster>().Captured = true;
+        monster.SetActive(false);
         MonstersCaptured.Add(monster.GetComponent<Monster>());
         monster.transform.SetParent(transform);
         monster.transform.localPosition = Vector3.zero;
