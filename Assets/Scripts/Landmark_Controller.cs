@@ -8,11 +8,12 @@ public class Landmark_Controller : MonoBehaviour
     private List<GameObject> GeneratedLandmarks = new List<GameObject>();
 
     [SerializeField] private int _landmarkSeparationDistance_sett;
+    [SerializeField] private int _numGeneratedLandmarks_sett;
 
     // Start is called before the first frame update
     void Start()
     {
-        for (var i = 0; i < 5; i++)
+        for (var i = 0; i < _numGeneratedLandmarks_sett; i++)
         {
             _generateLandmark();
         }

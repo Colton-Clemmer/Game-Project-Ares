@@ -41,6 +41,7 @@ public class Player : MonoBehaviour
     private DateTime _lastMonsterSwitch;
 
     private DateTime _lastItemUsed;
+    private bool _zoomedOut;
 
     #endregion
 
@@ -76,6 +77,7 @@ public class Player : MonoBehaviour
     {
         Utils.Camera.transform.position = transform.position;
         _getMovement();
+        _getZoom();
         _selectMonster();
         _selectItem();
         _useMove();
@@ -340,6 +342,16 @@ public class Player : MonoBehaviour
     #endregion
 
     #region Input
+
+    private void _getZoom()
+    {
+        var zoom = Input.mouseScrollDelta.y;
+        if (zoom > 0 || zoom < 0)
+        {
+            _zoomedOut = !_zoomedOut;
+            GameObject.FindWithTag("MainCamera").GetComponent<Camera>().orthographicSize = _zoomedOut ? 10 : 5;
+        }
+    }
 
     private void _getMovement()
     {
