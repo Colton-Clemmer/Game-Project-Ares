@@ -24,6 +24,7 @@ public class Group_Controller : MonoBehaviour
             monster.transform.localPosition = Vector3.zero;
             var m = monster.GetComponent<Monster>();
             m.Home = gameObject;
+            m.Group = this;
             m.Level = 1;
             if (Target != null)
             {

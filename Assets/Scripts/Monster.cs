@@ -76,7 +76,7 @@ public class Monster : MonoBehaviour
     [SerializeField] private GameObject _healthBar;
     [SerializeField] private GameObject _damageNumber;
     [SerializeField] private GameObject _experienceText;
-    [SerializeField] private Group_Controller Group;
+    public Group_Controller Group;
     public GameObject HitEffect;
     #endregion
 
