@@ -9,6 +9,7 @@ AI controlled monsters that are on your team (release current monster and turn b
 only give damage when actually performing the move, not wind up or cool down
 Add dodge mechanics and allow AI to utilize
 change sprint speed to correspond to monster speed and type
+ensure monsters base and subtype cannot be the same
 
 Add Shops
 

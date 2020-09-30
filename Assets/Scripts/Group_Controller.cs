@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using PolyNav;
 
 public class Group_Controller : MonoBehaviour
 {
     public GameObject MonsterPrefab;
+    [SerializeField] private PolyNav2D _nav;
 
     public GameObject Target;
 
@@ -22,6 +24,8 @@ public class Group_Controller : MonoBehaviour
             var monster = Instantiate(MonsterPrefab);
             monster.transform.SetParent(transform);
             monster.transform.localPosition = Vector3.zero;
+            var nav = monster.GetComponent<PolyNavAgent>();
+            nav.map = Utils.NavGrid;
             var m = monster.GetComponent<Monster>();
             m.Home = gameObject;
             m.Group = this;
