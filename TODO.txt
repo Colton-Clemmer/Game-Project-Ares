@@ -8,5 +8,9 @@ Add criticals and wiffs
 AI controlled monsters that are on your team (release current monster and turn back to trainer)
 only give damage when actually performing the move, not wind up or cool down
 Add dodge mechanics and allow AI to utilize
+change sprint speed to correspond to monster speed and type
 
 Add Shops
+
+Armour drops that give defence bonuses to elements
+Controller support

@@ -355,17 +355,19 @@ public class Player : MonoBehaviour
 
     private void _getMovement()
     {
+        var holdingShift = Input.GetKey(KeyCode.LeftShift);
+        if (MonsterIndex == -1) holdingShift = false;
         var inputHorizontal = Input.GetAxis("Horizontal");
         var inputVertical = Input.GetAxis("Vertical");
         var moveHorizontal = inputHorizontal * _moveForce_sett;
         var moveVertical = inputVertical * _moveForce_sett;
         var rigidBody = _rb;
 
-        if (Mathf.Abs(rigidBody.velocity.x) > _maxSpeet_sett)
+        if (Mathf.Abs(rigidBody.velocity.x) > (holdingShift ? _maxSpeet_sett * 2 : _maxSpeet_sett))
         {
             moveHorizontal = 0;
         }
-        if (Mathf.Abs(rigidBody.velocity.y) > _maxSpeet_sett)
+        if (Mathf.Abs(rigidBody.velocity.y) > (holdingShift ? _maxSpeet_sett * 2 : _maxSpeet_sett))
         {
             moveVertical = 0;
         }
